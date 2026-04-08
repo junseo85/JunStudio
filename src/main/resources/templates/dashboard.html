@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Dashboard</title>
+</head>
+<body>
+
+<main>
+  <h1 th:text="${pageTitle}">Default Title</h1>
+  <p>You currently have <strong th:text="${credits}">0</strong> lesson credits available.</p>
+  <a href="/schedule" class="btn btn-primary">Request Lesson</a>
+</main>
+
+</body>
+</html>

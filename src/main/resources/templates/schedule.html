@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Schedule a Lesson</title>
+</head>
+<body>
+
+<main class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-2">Request a Lesson</h2>
+                    <p class="text-center text-muted mb-4">Choose a date and time that works for you.</p>
+
+                    <form action="/schedule" method="POST">
+                        <div class="mb-3">
+                            <label for="lessonDate" class="form-label">Date</label>
+                            <input type="date" id="lessonDate" name="lessonDate" class="form-control" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="lessonTime" class="form-label">Time</label>
+                            <input type="time" id="lessonTime" name="lessonTime" class="form-control" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100"
+                                onclick="this.innerText='Submitting Request...'; this.classList.add('disabled'); this.form.submit();">
+                            Submit Request
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="/dashboard" class="text-decoration-none text-secondary">← Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>
