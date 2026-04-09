@@ -5,11 +5,120 @@
 </head>
 <body>
 
-<main>
+<main class="container mt-5">
+  <div th:if="${param.nocredit}" class="alert alert-danger" role="alert">
+    <strong>Action Denied:</strong> You do not have sufficient credit. Please add more credit to schedule a lesson.
+  </div>
   <h1 th:text="${pageTitle}">Default Title</h1>
-  <p>You currently have <strong th:text="${credits}">0</strong> lesson credits available.</p>
-  <a href="/schedule" class="btn btn-primary">Request Lesson</a>
-</main>
 
+  <p class="lead">
+    You currently have <strong class="text-success" th:text="${credits}">0</strong> lesson credits available.
+  </p>
+
+  <div class="d-flex align-items-stretch gap-3 mt-4">
+
+    <a href="/schedule" class="btn btn-primary d-flex align-items-center px-4">Request Lesson</a>
+
+    <form action="/checkout" method="POST" class="m-0 p-0">
+
+      <input type="hidden" id="creditQuantity" name="quantity" value="1">
+
+      <div class="purchase-group" id="purchaseGroup">
+        <div class="qty-controls">
+          <button type="button" class="btn-qty" onclick="changeQty(-1)">-</button>
+          <span id="displayQty">1</span>
+          <button type="button" class="btn-qty" onclick="changeQty(1)">+</button>
+        </div>
+
+        <button type="submit" class="btn-purchase" id="purchaseBtnText">
+          Purchase 1 Credit for $75
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <style>
+    .purchase-group {
+      display: flex;
+      height: 100%;
+      border: 2px solid #198754; /* Bootstrap Success Green */
+      border-radius: 0.375rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      background: white;
+      cursor: pointer;
+    }
+    /* The hidden +/- section */
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      width: 0;
+      opacity: 0;
+      overflow: hidden;
+      background: #e8f5e9;
+      transition: all 0.3s ease;
+    }
+    /* MAGIC: When hovering the whole group, expand the controls! */
+    .purchase-group:hover .qty-controls {
+      width: 100px;
+      opacity: 1;
+    }
+    .purchase-group:hover .btn-purchase {
+      background: #198754;
+      color: white;
+    }
+    .btn-qty {
+      border: none;
+      background: transparent;
+      color: #198754;
+      font-size: 1.2rem;
+      font-weight: bold;
+      width: 35px;
+    }
+    .btn-qty:hover {
+      background: #c8e6c9;
+    }
+    #displayQty {
+      font-weight: bold;
+      color: #198754;
+      width: 30px;
+      text-align: center;
+    }
+    .btn-purchase {
+      border: none;
+      background: transparent;
+      color: #198754;
+      padding: 0.5rem 1.25rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+  </style>
+
+  <script>
+    let qty = 1;
+    const pricePerCredit = 75;
+
+    function changeQty(change) {
+      // Change the quantity, but prevent it from going below 1
+      qty += change;
+      if (qty < 1) qty = 1;
+
+      // Update the hidden input for Stripe
+      document.getElementById('creditQuantity').value = qty;
+
+      // Update the visual number between the + and -
+      document.getElementById('displayQty').innerText = qty;
+
+      // Calculate the new total and update the button text
+      const total = qty * pricePerCredit;
+      const btnText = qty === 1
+              ? `Purchase 1 Credit for $${total}`
+              : `Purchase ${qty} Credits for $${total}`;
+
+      document.getElementById('purchaseBtnText').innerText = btnText;
+    }
+  </script>
+
+</main>
 </body>
 </html>

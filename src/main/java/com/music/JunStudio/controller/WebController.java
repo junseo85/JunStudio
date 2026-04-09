@@ -40,7 +40,7 @@ public class WebController {
 
     // 2. Catch the form data when they click submit
     @PostMapping("/register")
-    public String registerNewUser(@RequestParam String email, @RequestParam String password) {
+    public String registerNewUser(@RequestParam String firstName, @RequestParam String lastName, @RequestParam String phoneNumber, @RequestParam String email, @RequestParam String password) {
 
         // Check if user already exists to prevent duplicate errors
         if (userRepository.findByEmail(email).isPresent()) {
@@ -48,6 +48,9 @@ public class WebController {
         }
 
         User newUser = new User();
+        newUser.setFirstName(firstName);
+        newUser.setLastName(lastName);
+        newUser.setPhoneNumber(phoneNumber);
         newUser.setEmail(email);
 
         // THIS IS THE MAGIC LINE: We hash the plain text password right before saving
@@ -64,12 +67,24 @@ public class WebController {
 
 
     @GetMapping("/dashboard")
-    public String showDashboard(Model model) {
-        // The 'Model' allows us to pass Java variables to the HTML page
-        model.addAttribute("pageTitle", "Student Practice Dashboard");
-        model.addAttribute("credits", 5);
+    public String showDashboard(Model model, Principal principal) {
 
-        // This tells Spring to look for an HTML file named "dashboard.html"
+        // 1. Look up the currently logged-in user
+        User currentUser = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2. LOGIC CHECK: Does the user have a first name?
+        String displayName = currentUser.getFirstName();
+
+        // Check if the name is literally null, or if it's just an empty string ""
+        if (displayName == null || displayName.trim().isEmpty()) {
+            displayName = currentUser.getEmail(); // Fallback to email
+        }
+
+        // 3. Pass the safe display name and their credits into the HTML
+        model.addAttribute("pageTitle", "Welcome, " + displayName);
+        model.addAttribute("credits", currentUser.getLessonCredits());
+
         return "dashboard";
     }
 
@@ -80,17 +95,34 @@ public class WebController {
 
     @PostMapping("/schedule")
     public String requestLesson(
-            @RequestParam LocalDate lessonDate, @RequestParam LocalTime lessonTime, Principal principal){
-        Lesson newLesson = new Lesson();
+            @RequestParam LocalDate lessonDate,
+            @RequestParam LocalTime lessonTime,
+            Principal principal) {
 
-        //principal.getName() automatically grabs the logged-in user's email
-        newLesson.setStudentEmail(principal.getName());
+        // 1. Look up the user making the request
+        User currentUser = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2. HARD SECURITY CHECK: Did they bypass the front-end?
+        // If they have no credits, immediately bounce them out.
+        if (currentUser.getLessonCredits() <= 0) {
+            return "redirect:/dashboard?nocredit=true";
+        }
+
+        // 3. They have credits! Create the lesson request.
+        Lesson newLesson = new Lesson();
+        newLesson.setStudentEmail(currentUser.getEmail());
         newLesson.setLessonDate(lessonDate);
         newLesson.setLessonTime(lessonTime);
-
         lessonRepository.save(newLesson);
 
-        //Redirect to the home page with a success flag
+        // 4. THE IMPORTANT MATH: Deduct 1 credit from their account
+        currentUser.setLessonCredits(currentUser.getLessonCredits() - 1);
+
+        // 5. Save the updated user back to the database
+        userRepository.save(currentUser);
+
+        // 6. Redirect to the home page with a success flag
         return "redirect:/?lessonRequested=true";
     }
 
