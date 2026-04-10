@@ -33,11 +33,16 @@ public class SecurityConfig {
     public org.springframework.security.web.SecurityFilterChain filterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/register", "/css/**", "/js/**").permitAll() // Allow everyone to see sign up & styles
-                        .anyRequest().authenticated() // Everything else requires login
+                        .requestMatchers("/register", "/css/**", "/js/**").permitAll()
+
+                        // NEW: Lock down the admin actions!
+                        // Note: Spring automatically adds "ROLE_" to this, so it looks for "ROLE_ADMIN" in your database
+                        .requestMatchers("/lesson/approve", "/lesson/cancel", "/admin/override").hasRole("ADMIN")
+
+                        .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("/login") // Tells Spring to look for your new login.html
+                        .loginPage("/login")
                         .defaultSuccessUrl("/dashboard", true)
                         .permitAll()
                 )
@@ -45,6 +50,23 @@ public class SecurityConfig {
 
         return http.build();
     }
+    //works but need more strict security measure
+//    @Bean
+//    public org.springframework.security.web.SecurityFilterChain filterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/register", "/css/**", "/js/**").permitAll() // Allow everyone to see sign up & styles
+//                        .anyRequest().authenticated() // Everything else requires login
+//                )
+//                .formLogin(form -> form
+//                        .loginPage("/login") // Tells Spring to look for your new login.html
+//                        .defaultSuccessUrl("/dashboard", true)
+//                        .permitAll()
+//                )
+//                .logout(logout -> logout.permitAll());
+//
+//        return http.build();
+//    }
 
     //use default log in page- does not have create an account
 //    @Bean

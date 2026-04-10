@@ -9,10 +9,15 @@
     <div class="row justify-content-center">
         <div class="col-md-5">
 
-            <div th:if="${param.error}" class="alert alert-danger text-center">
+            <div th:if="${param.error} and ${param.error[0] == ''}" class="alert alert-danger text-center">
                 Invalid email or password.
             </div>
-
+            <div th:if="${param.error != null and param.error[0] == 'emailExists'}" class="alert alert-warning text-center">
+                An account with that email already exists. Please log in.
+            </div>
+            <div th:if="${param.error != null and param.error[0] == 'dbError'}" class="alert alert-danger text-center">
+                A system error occurred while creating your account. Please try again.
+            </div>
             <div th:if="${param.registered}" class="alert alert-success text-center">
                 Account created successfully! Please log in.
             </div>
@@ -21,7 +26,7 @@
                 <div class="card-body p-4">
                     <h2 class="text-center mb-4">Log In</h2>
 
-                    <form action="/login" method="POST">
+                    <form th:action="@{/login}" method="POST">
                         <div class="mb-3">
                             <label for="username" class="form-label">Email Address</label>
                             <input type="email" id="username" name="username" class="form-control" required>
@@ -40,6 +45,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </main>
