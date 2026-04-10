@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login - Jun Studio</title>
+</head>
+<body>
+
+<main class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div th:if="${param.error}" class="alert alert-danger text-center">
+                Invalid email or password.
+            </div>
+
+            <div th:if="${param.registered}" class="alert alert-success text-center">
+                Account created successfully! Please log in.
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Log In</h2>
+
+                    <form action="/login" method="POST">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Email Address</label>
+                            <input type="email" id="username" name="username" class="form-control" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Log In</button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <p class="text-muted">Don't have an account? <a href="/register" class="text-decoration-none">Sign up here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

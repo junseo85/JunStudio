@@ -4,121 +4,118 @@
   <title>Dashboard</title>
 </head>
 <body>
-
 <main class="container mt-5">
   <div th:if="${param.nocredit}" class="alert alert-danger" role="alert">
     <strong>Action Denied:</strong> You do not have sufficient credit. Please add more credit to schedule a lesson.
   </div>
-  <h1 th:text="${pageTitle}">Default Title</h1>
-
-  <p class="lead">
-    You currently have <strong class="text-success" th:text="${credits}">0</strong> lesson credits available.
-  </p>
-
-  <div class="d-flex align-items-stretch gap-3 mt-4">
-
-    <a href="/schedule" class="btn btn-primary d-flex align-items-center px-4">Request Lesson</a>
-
-    <form action="/checkout" method="POST" class="m-0 p-0">
-
-      <input type="hidden" id="creditQuantity" name="quantity" value="1">
-
-      <div class="purchase-group" id="purchaseGroup">
-        <div class="qty-controls">
-          <button type="button" class="btn-qty" onclick="changeQty(-1)">-</button>
-          <span id="displayQty">1</span>
-          <button type="button" class="btn-qty" onclick="changeQty(1)">+</button>
-        </div>
-
-        <button type="submit" class="btn-purchase" id="purchaseBtnText">
-          Purchase 1 Credit for $75
-        </button>
-      </div>
-    </form>
+  <div th:if="${param.payment}" class="alert alert-success" role="alert">
+    <strong>Payment Successful!</strong> Credits have been added to your account.
+  </div>
+  <div th:if="${param.approved}" class="alert alert-success" role="alert">
+    <strong>Approved!</strong> The lesson has been scheduled.
   </div>
 
-  <style>
-    .purchase-group {
-      display: flex;
-      height: 100%;
-      border: 2px solid #198754; /* Bootstrap Success Green */
-      border-radius: 0.375rem;
-      overflow: hidden;
-      transition: all 0.3s ease;
-      background: white;
-      cursor: pointer;
-    }
-    /* The hidden +/- section */
-    .qty-controls {
-      display: flex;
-      align-items: center;
-      width: 0;
-      opacity: 0;
-      overflow: hidden;
-      background: #e8f5e9;
-      transition: all 0.3s ease;
-    }
-    /* MAGIC: When hovering the whole group, expand the controls! */
-    .purchase-group:hover .qty-controls {
-      width: 100px;
-      opacity: 1;
-    }
-    .purchase-group:hover .btn-purchase {
-      background: #198754;
-      color: white;
-    }
-    .btn-qty {
-      border: none;
-      background: transparent;
-      color: #198754;
-      font-size: 1.2rem;
-      font-weight: bold;
-      width: 35px;
-    }
-    .btn-qty:hover {
-      background: #c8e6c9;
-    }
-    #displayQty {
-      font-weight: bold;
-      color: #198754;
-      width: 30px;
-      text-align: center;
-    }
-    .btn-purchase {
-      border: none;
-      background: transparent;
-      color: #198754;
-      padding: 0.5rem 1.25rem;
-      font-weight: 500;
-      transition: all 0.3s ease;
-    }
-  </style>
+  <h1 th:text="${pageTitle}" class="mb-4">Welcome</h1>
 
-  <script>
-    let qty = 1;
-    const pricePerCredit = 75;
+  <div th:if="${isAdmin}">
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Pending Lesson Requests</h5>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+          <tr>
+            <th>Student Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Action</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="lesson : ${pendingLessons}">
+            <td th:text="${lesson.firstName + ' ' + lesson.lastName}">John Doe</td>
+            <td th:text="${lesson.email}">email@test.com</td>
+            <td th:text="${lesson.phoneNumber}">555-5555</td>
+            <td th:text="${lesson.lessonDate}">2026-05-01</td>
+            <td th:text="${lesson.lessonTime}">14:00</td>
+            <td>
+              <form action="/lesson/approve" method="POST" class="m-0">
+                <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+              </form>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(pendingLessons)}">
+            <td colspan="6" class="text-center py-4 text-muted">No pending requests at this time.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-    function changeQty(change) {
-      // Change the quantity, but prevent it from going below 1
-      qty += change;
-      if (qty < 1) qty = 1;
 
-      // Update the hidden input for Stripe
-      document.getElementById('creditQuantity').value = qty;
+  <div th:if="${!isAdmin}">
 
-      // Update the visual number between the + and -
-      document.getElementById('displayQty').innerText = qty;
+    <div class="card shadow-sm mb-5">
+      <div class="card-body">
+        <p class="lead mb-2">
+          You currently have <strong class="text-success" th:text="${credits}">0</strong> lesson credits available.
+        </p>
 
-      // Calculate the new total and update the button text
-      const total = qty * pricePerCredit;
-      const btnText = qty === 1
-              ? `Purchase 1 Credit for $${total}`
-              : `Purchase ${qty} Credits for $${total}`;
+        <div class="d-flex align-items-stretch gap-3 mt-3">
+          <a href="/schedule" class="btn btn-primary d-flex align-items-center px-4">Request Lesson</a>
 
-      document.getElementById('purchaseBtnText').innerText = btnText;
-    }
-  </script>
+          <form action="/checkout" method="POST" class="m-0 p-0">
+            <input type="hidden" id="creditQuantity" name="quantity" value="1">
+            <div class="purchase-group" id="purchaseGroup">
+              <div class="qty-controls">
+                <button type="button" class="btn-qty" onclick="changeQty(-1)">-</button>
+                <span id="displayQty">1</span>
+                <button type="button" class="btn-qty" onclick="changeQty(1)">+</button>
+              </div>
+              <button type="submit" class="btn-purchase" id="purchaseBtnText">
+                Purchase 1 Credit for $75
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">My Scheduled Lessons</h5>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="lesson : ${scheduledLessons}">
+            <td th:text="${lesson.lessonDate}">2026-05-01</td>
+            <td th:text="${lesson.lessonTime}">14:00</td>
+            <td><span class="badge bg-success">Confirmed</span></td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(scheduledLessons)}">
+            <td colspan="3" class="text-center py-4 text-muted">You have no scheduled lessons.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
 
 </main>
+
 </body>
 </html>

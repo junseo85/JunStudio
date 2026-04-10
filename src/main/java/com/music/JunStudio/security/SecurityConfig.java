@@ -30,22 +30,40 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public org.springframework.security.web.SecurityFilterChain filterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Keep this disabled for now so our HTML forms work easily
                 .authorizeHttpRequests(auth -> auth
-                        // OPEN THE GATES for the registration page and static files
-                        .requestMatchers("/register", "/css/**").permitAll()
-                        // Lock down everything else
-                        .anyRequest().authenticated()
+                        .requestMatchers("/register", "/css/**", "/js/**").permitAll() // Allow everyone to see sign up & styles
+                        .anyRequest().authenticated() // Everything else requires login
                 )
                 .formLogin(form -> form
+                        .loginPage("/login") // Tells Spring to look for your new login.html
                         .defaultSuccessUrl("/dashboard", true)
                         .permitAll()
-                );
+                )
+                .logout(logout -> logout.permitAll());
 
         return http.build();
     }
+
+    //use default log in page- does not have create an account
+//    @Bean
+//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+//        http
+//                .csrf(csrf -> csrf.disable()) // Keep this disabled for now so our HTML forms work easily
+//                .authorizeHttpRequests(auth -> auth
+//                        // OPEN THE GATES for the registration page and static files
+//                        .requestMatchers("/register", "/css/**").permitAll()
+//                        // Lock down everything else
+//                        .anyRequest().authenticated()
+//                )
+//                .formLogin(form -> form
+//                        .defaultSuccessUrl("/dashboard", true)
+//                        .permitAll()
+//                );
+//
+//        return http.build();
+//    }
 
     //permit all version
 //    @Bean

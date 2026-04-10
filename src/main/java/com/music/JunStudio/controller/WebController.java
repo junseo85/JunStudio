@@ -1,5 +1,6 @@
 package com.music.JunStudio.controller;
 
+import com.music.JunStudio.dto.AdminLessonDTO;
 import com.music.JunStudio.model.Lesson;
 import com.music.JunStudio.model.User;
 import com.music.JunStudio.repository.LessonRepository;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class WebController {
@@ -66,26 +69,64 @@ public class WebController {
     }
 
 
+
     @GetMapping("/dashboard")
     public String showDashboard(Model model, Principal principal) {
 
-        // 1. Look up the currently logged-in user
         User currentUser = userRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2. LOGIC CHECK: Does the user have a first name?
         String displayName = currentUser.getFirstName();
-
-        // Check if the name is literally null, or if it's just an empty string ""
         if (displayName == null || displayName.trim().isEmpty()) {
-            displayName = currentUser.getEmail(); // Fallback to email
+            displayName = currentUser.getEmail();
         }
-
-        // 3. Pass the safe display name and their credits into the HTML
         model.addAttribute("pageTitle", "Welcome, " + displayName);
         model.addAttribute("credits", currentUser.getLessonCredits());
 
+        // Check the role
+        boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
+        model.addAttribute("isAdmin", isAdmin);
+
+        if (isAdmin) {
+            // ADMIN VIEW: Grab pending requests and attach user details
+            List<Lesson> pendingLessons = lessonRepository.findByStatus("PENDING");
+            List<AdminLessonDTO> adminLessons = new ArrayList<>();
+
+            for (Lesson lesson : pendingLessons) {
+                // Find the user who made the request
+                User student = userRepository.findByEmail(lesson.getStudentEmail()).orElse(new User());
+                adminLessons.add(new AdminLessonDTO(
+                        lesson.getId(),
+                        student.getFirstName(),
+                        student.getLastName(),
+                        student.getEmail(),
+                        student.getPhoneNumber(),
+                        lesson.getLessonDate(),
+                        lesson.getLessonTime()
+                ));
+            }
+            model.addAttribute("pendingLessons", adminLessons);
+        } else {
+            // STUDENT VIEW: Grab their approved scheduled lessons
+            List<Lesson> scheduledLessons = lessonRepository.findByStudentEmailAndStatus(currentUser.getEmail(), "SCHEDULED");
+            model.addAttribute("scheduledLessons", scheduledLessons);
+        }
+
         return "dashboard";
+    }
+
+    // NEW ENDPOINT: Handle the Admin clicking "Approve"
+    @PostMapping("/lesson/approve")
+    public String approveLesson(@RequestParam Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+
+        // Change status to SCHEDULED and save!
+        lesson.setStatus("SCHEDULED");
+        lessonRepository.save(lesson);
+
+        // Redirect back to the admin dashboard with a success flag
+        return "redirect:/dashboard?approved=true";
     }
 
     @GetMapping("/schedule")
@@ -124,6 +165,42 @@ public class WebController {
 
         // 6. Redirect to the home page with a success flag
         return "redirect:/?lessonRequested=true";
+    }
+
+    // Show the custom login page
+    @GetMapping("/login")
+    public String showLoginPage() {
+        return "login";
+    }
+
+    // Show the My Schedule page
+    @GetMapping("/my-schedule")
+    public String showMySchedule(Model model, Principal principal) {
+
+        User currentUser = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
+        model.addAttribute("isAdmin", isAdmin);
+
+        if (isAdmin) {
+            // ADMIN VIEW: Fetch all lessons and categorize them by status
+            List<Lesson> allLessons = lessonRepository.findAll();
+
+            List<Lesson> scheduled = allLessons.stream().filter(l -> "SCHEDULED".equals(l.getStatus())).toList();
+            List<Lesson> pending = allLessons.stream().filter(l -> "PENDING".equals(l.getStatus())).toList();
+            List<Lesson> canceled = allLessons.stream().filter(l -> "CANCELED".equals(l.getStatus())).toList();
+
+            model.addAttribute("scheduledLessons", scheduled);
+            model.addAttribute("pendingLessons", pending);
+            model.addAttribute("canceledLessons", canceled);
+        } else {
+            // STUDENT VIEW: Fetch only their personal lessons
+            List<Lesson> myLessons = lessonRepository.findByStudentEmail(currentUser.getEmail());
+            model.addAttribute("studentLessons", myLessons);
+        }
+
+        return "my-schedule";
     }
 
 }
