@@ -249,7 +249,6 @@ public class WebController {
         return "login";
     }
 
-    // Show the My Schedule page
     @GetMapping("/my-schedule")
     public String showMySchedule(Model model, Principal principal) {
 
@@ -260,23 +259,48 @@ public class WebController {
         model.addAttribute("isAdmin", isAdmin);
 
         if (isAdmin) {
-            // ADMIN VIEW: Fetch all lessons and categorize them by status
+            // ADMIN VIEW: Fetch all lessons and map them to our DTO to include names
             List<Lesson> allLessons = lessonRepository.findAll();
 
-            List<Lesson> scheduled = allLessons.stream().filter(l -> "SCHEDULED".equals(l.getStatus())).toList();
-            List<Lesson> pending = allLessons.stream().filter(l -> "PENDING".equals(l.getStatus())).toList();
-            List<Lesson> canceled = allLessons.stream().filter(l -> "CANCELED".equals(l.getStatus())).toList();
+            List<AdminLessonDTO> scheduled = allLessons.stream()
+                    .filter(l -> "SCHEDULED".equals(l.getStatus()))
+                    .map(this::convertToAdminDTO)
+                    .toList();
+
+            List<AdminLessonDTO> pending = allLessons.stream()
+                    .filter(l -> "PENDING".equals(l.getStatus()))
+                    .map(this::convertToAdminDTO)
+                    .toList();
+
+            List<AdminLessonDTO> canceled = allLessons.stream()
+                    .filter(l -> "CANCELED".equals(l.getStatus()))
+                    .map(this::convertToAdminDTO)
+                    .toList();
 
             model.addAttribute("scheduledLessons", scheduled);
             model.addAttribute("pendingLessons", pending);
             model.addAttribute("canceledLessons", canceled);
         } else {
-            // STUDENT VIEW: Fetch only their personal lessons
+            // STUDENT VIEW: Fetch only their personal lessons (No DTO needed)
             List<Lesson> myLessons = lessonRepository.findByStudentEmail(currentUser.getEmail());
             model.addAttribute("studentLessons", myLessons);
         }
 
         return "my-schedule";
+    }
+
+    // HELPER METHOD: Looks up the user to attach their first and last name to the lesson data
+    private AdminLessonDTO convertToAdminDTO(Lesson lesson) {
+        User student = userRepository.findByEmail(lesson.getStudentEmail()).orElse(new User());
+        return new AdminLessonDTO(
+                lesson.getId(),
+                student.getFirstName(),
+                student.getLastName(),
+                student.getEmail(),
+                student.getPhoneNumber(),
+                lesson.getLessonDate(),
+                lesson.getLessonTime()
+        );
     }
 
     @GetMapping("/api/available-times")

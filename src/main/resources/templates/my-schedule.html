@@ -34,13 +34,21 @@
                 <table class="table table-striped mt-2">
                     <thead>
                     <tr>
-                        <th>ID</th><th>Student Email</th><th>Date</th><th>Time</th><th>Status</th>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="lesson : ${scheduledLessons}">
-                        <td th:text="${lesson.id}"></td>
-                        <td th:text="${lesson.studentEmail}"></td>
+                        <td th:text="${lesson.lessonId}"></td>
+                        <td th:text="${lesson.firstName}"></td>
+                        <td th:text="${lesson.lastName}"></td>
+                        <td th:text="${lesson.email}"></td>
                         <td th:text="${lesson.lessonDate}"></td>
                         <td th:text="${lesson.lessonTime}"></td>
                         <td><span class="badge bg-success">SCHEDULED</span></td>
@@ -53,16 +61,27 @@
                 <table class="table table-striped mt-2">
                     <thead>
                     <tr>
-                        <th>ID</th><th>Student Email</th><th>Date</th><th>Time</th><th>Status</th>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="lesson : ${pendingLessons}">
-                        <td th:text="${lesson.id}"></td>
-                        <td th:text="${lesson.studentEmail}"></td>
+                        <td th:text="${lesson.lessonId}"></td>
+                        <td th:text="${lesson.firstName}"></td>
+                        <td th:text="${lesson.lastName}"></td>
+                        <td th:text="${lesson.email}"></td>
                         <td th:text="${lesson.lessonDate}"></td>
                         <td th:text="${lesson.lessonTime}"></td>
                         <td><span class="badge bg-warning text-dark">PENDING</span></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(pendingLessons)}">
+                        <td colspan="7" class="text-center py-3 text-muted">No pending lessons.</td>
                     </tr>
                     </tbody>
                 </table>
@@ -72,16 +91,27 @@
                 <table class="table table-striped mt-2">
                     <thead>
                     <tr>
-                        <th>ID</th><th>Student Email</th><th>Date</th><th>Time</th><th>Status</th>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="lesson : ${canceledLessons}">
-                        <td th:text="${lesson.id}"></td>
-                        <td th:text="${lesson.studentEmail}"></td>
+                        <td th:text="${lesson.lessonId}"></td>
+                        <td th:text="${lesson.firstName}"></td>
+                        <td th:text="${lesson.lastName}"></td>
+                        <td th:text="${lesson.email}"></td>
                         <td th:text="${lesson.lessonDate}"></td>
                         <td th:text="${lesson.lessonTime}"></td>
                         <td><span class="badge bg-danger">CANCELED</span></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(canceledLessons)}">
+                        <td colspan="7" class="text-center py-3 text-muted">No canceled lessons.</td>
                     </tr>
                     </tbody>
                 </table>
@@ -95,12 +125,11 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                     <tr>
-                        <th>ID</th><th>Date</th><th>Time</th><th>Status</th>
+                        <th>Date</th><th>Time</th><th>Status</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="lesson : ${studentLessons}">
-                        <td th:text="${lesson.id}">1</td>
                         <td th:text="${lesson.lessonDate}">2026-05-01</td>
                         <td th:text="${lesson.lessonTime}">14:00</td>
                         <td>
