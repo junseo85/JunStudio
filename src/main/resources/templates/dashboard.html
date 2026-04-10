@@ -20,105 +20,17 @@
   <div th:if="${param.overrideSaved}" class="alert alert-success" role="alert">
     <strong>Success!</strong> Schedule override has been updated.
   </div>
+  <div th:if="${param.receiptEmailed}" class="alert alert-success" role="alert">
+    <strong>Success!</strong> Your receipt has been sent to your email.
+  </div>
 
   <h1 th:text="${pageTitle}" class="mb-4">Welcome</h1>
 
   <div th:if="${isAdmin}">
+
     <div class="card shadow-sm">
       <div class="card-header bg-dark text-white">
         <h5 class="mb-0">Pending Lesson Requests</h5>
-        <hr class="my-5">
-        <h3 class="mb-4">Studio Settings</h3>
-
-        <div class="row">
-          <div class="col-md-5 mb-4">
-            <div class="card shadow-sm">
-              <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0">Set Schedule Override</h5>
-              </div>
-              <div class="card-body">
-                <form th:action="@{/admin/override}" method="POST">
-                  <div class="mb-3">
-                    <label class="form-label">Date to Override</label>
-                    <input type="date" name="overrideDate" class="form-control" required>
-                  </div>
-
-                  <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="isClosed" name="isClosed" value="true">
-                    <label class="form-check-label text-danger fw-bold" for="isClosed">Studio Closed Entire Day</label>
-                  </div>
-
-                  <div class="row" id="timeInputs">
-                    <div class="col-6 mb-3">
-                      <label class="form-label">Start Time</label>
-                      <input type="time" name="startTime" id="startTime" class="form-control">
-                    </div>
-                    <div class="col-6 mb-3">
-                      <label class="form-label">End Time</label>
-                      <input type="time" name="endTime" id="endTime" class="form-control">
-                    </div>
-                  </div>
-
-                  <button type="submit" class="btn btn-warning w-100">Save Override</button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-md-7">
-            <div class="card shadow-sm">
-              <div class="card-header bg-light">
-                <h5 class="mb-0">Active Overrides</h5>
-              </div>
-              <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0">
-                  <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Status / Hours</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  <tr th:each="ovr : ${overrides}">
-                    <td th:text="${ovr.overrideDate}" class="fw-bold"></td>
-                    <td>
-                      <span th:if="${ovr.isClosed}" class="badge bg-danger">CLOSED</span>
-                      <span th:if="${!ovr.isClosed}" class="text-muted">
-                                                <span th:text="${ovr.startTime}"></span> - <span th:text="${ovr.endTime}"></span>
-                                            </span>
-                    </td>
-                  </tr>
-                  <tr th:if="${#lists.isEmpty(overrides)}">
-                    <td colspan="2" class="text-center py-3 text-muted">No overrides set.</td>
-                  </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <script>
-          document.getElementById('isClosed').addEventListener('change', function() {
-            const timeInputs = document.getElementById('timeInputs');
-            const start = document.getElementById('startTime');
-            const end = document.getElementById('endTime');
-
-            if (this.checked) {
-              timeInputs.style.opacity = '0.4';
-              start.disabled = true;
-              end.disabled = true;
-              start.removeAttribute('required');
-              end.removeAttribute('required');
-            } else {
-              timeInputs.style.opacity = '1';
-              start.disabled = false;
-              end.disabled = false;
-              start.setAttribute('required', 'required');
-              end.setAttribute('required', 'required');
-            }
-          });
-        </script>
       </div>
       <div class="card-body p-0">
         <table class="table table-hover mb-0">
@@ -159,7 +71,100 @@
           </tbody>
         </table>
       </div>
+    </div> <hr class="my-5">
+    <h3 class="mb-4">Studio Settings</h3>
+
+    <div class="row">
+
+      <div class="col-md-5 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Set Schedule Override</h5>
+          </div>
+          <div class="card-body">
+            <form th:action="@{/admin/override}" method="POST">
+              <div class="mb-3">
+                <label class="form-label">Date to Override</label>
+                <input type="date" name="overrideDate" class="form-control" required>
+              </div>
+
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="isClosed" name="isClosed" value="true">
+                <label class="form-check-label text-danger fw-bold" for="isClosed">Studio Closed Entire Day</label>
+              </div>
+
+              <div class="row" id="timeInputs">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Start Time</label>
+                  <input type="time" name="startTime" id="startTime" class="form-control">
+                </div>
+                <div class="col-6 mb-3">
+                  <label class="form-label">End Time</label>
+                  <input type="time" name="endTime" id="endTime" class="form-control">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-warning w-100">Save Override</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-7">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Active Overrides</h5>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status / Hours</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="ovr : ${overrides}">
+                <td th:text="${ovr.overrideDate}" class="fw-bold"></td>
+                <td>
+                  <span th:if="${ovr.isClosed}" class="badge bg-danger">CLOSED</span>
+                  <span th:if="${!ovr.isClosed}" class="text-muted">
+                  <span th:text="${ovr.startTime}"></span> - <span th:text="${ovr.endTime}"></span>
+                </span>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(overrides)}">
+                <td colspan="2" class="text-center py-3 text-muted">No overrides set.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <script>
+      document.getElementById('isClosed').addEventListener('change', function() {
+        const timeInputs = document.getElementById('timeInputs');
+        const start = document.getElementById('startTime');
+        const end = document.getElementById('endTime');
+
+        if (this.checked) {
+          timeInputs.style.opacity = '0.4';
+          start.disabled = true;
+          end.disabled = true;
+          start.removeAttribute('required');
+          end.removeAttribute('required');
+        } else {
+          timeInputs.style.opacity = '1';
+          start.disabled = false;
+          end.disabled = false;
+          start.setAttribute('required', 'required');
+          end.setAttribute('required', 'required');
+        }
+      });
+    </script>
+
   </div>
 
 
@@ -220,7 +225,62 @@
 
   </div>
 
+  <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="receiptModalLabel">Payment Successful!</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center p-4">
+          <h4 class="mb-3">Thank you for your purchase.</h4>
+          <p class="text-muted mb-4">Your lesson credits have been successfully added to your account. How would you like your receipt?</p>
+
+          <div class="d-grid gap-3">
+            <a href="/receipt/pdf" class="btn btn-outline-primary btn-lg" target="_blank" onclick="closeModal()">
+              Download PDF Receipt
+            </a>
+
+            <form th:action="@{/receipt/email}" method="POST" class="m-0">
+              <input type="hidden" name="qty" value="1">
+              <button type="submit" class="btn btn-primary btn-lg w-100">
+                Email Me the Receipt
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">No thanks, I don't need a receipt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Check if the URL contains "?payment=true"
+      const urlParams = new URLSearchParams(window.location.search);
+
+      if (urlParams.has('payment')) {
+        // Find the modal and show it
+        var receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
+        receiptModal.show();
+
+        // Clean up the URL so the modal doesn't pop up again if they refresh the page
+        window.history.replaceState({}, document.title, "/dashboard");
+      }
+    });
+
+    // Helper to close the modal after they click Download PDF
+    function closeModal() {
+      var modalEl = document.getElementById('receiptModal');
+      var modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if(modalInstance) {
+        modalInstance.hide();
+      }
+    }
+  </script>
 </main>
+
 
 </body>
 </html>

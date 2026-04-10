@@ -41,7 +41,7 @@
                         <th>Date</th>
                         <th>Time</th>
                         <th>Status</th>
-                    </tr>
+                        <th>Action</th> </tr>
                     </thead>
                     <tbody>
                     <tr th:each="lesson : ${scheduledLessons}">
@@ -52,6 +52,15 @@
                         <td th:text="${lesson.lessonDate}"></td>
                         <td th:text="${lesson.lessonTime}"></td>
                         <td><span class="badge bg-success">SCHEDULED</span></td>
+                        <td>
+                            <form th:action="@{/lesson/cancel}" method="POST" class="m-0">
+                                <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(scheduledLessons)}">
+                        <td colspan="8" class="text-center py-3 text-muted">No scheduled lessons.</td>
                     </tr>
                     </tbody>
                 </table>
@@ -68,7 +77,7 @@
                         <th>Date</th>
                         <th>Time</th>
                         <th>Status</th>
-                    </tr>
+                        <th>Action</th> </tr>
                     </thead>
                     <tbody>
                     <tr th:each="lesson : ${pendingLessons}">
@@ -79,9 +88,15 @@
                         <td th:text="${lesson.lessonDate}"></td>
                         <td th:text="${lesson.lessonTime}"></td>
                         <td><span class="badge bg-warning text-dark">PENDING</span></td>
+                        <td>
+                            <form th:action="@{/lesson/cancel}" method="POST" class="m-0">
+                                <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                            </form>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(pendingLessons)}">
-                        <td colspan="7" class="text-center py-3 text-muted">No pending lessons.</td>
+                        <td colspan="8" class="text-center py-3 text-muted">No pending lessons.</td>
                     </tr>
                     </tbody>
                 </table>

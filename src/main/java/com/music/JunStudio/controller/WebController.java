@@ -16,13 +16,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.music.JunStudio.service.EmailService;
 import org.springframework.web.bind.annotation.ResponseBody;
+import com.lowagie.text.Document;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfWriter;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
+import java.time.LocalDate;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.time.DayOfWeek;
 
 @Controller
 public class WebController {
@@ -168,21 +176,21 @@ public class WebController {
 
     // NEW ENDPOINT: Handle the Admin clicking "Cancel"
     @PostMapping("/lesson/cancel")
-    public String cancelLesson(@RequestParam Long lessonId) {
+    public String cancelLesson(@RequestParam Long lessonId, HttpServletRequest request) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
 
-        // 1. Change lesson status to CANCELED and save
+        // 1. Change status to CANCELED and save
         lesson.setStatus("CANCELED");
         lessonRepository.save(lesson);
 
-        // 2. THE REFUND LOGIC: Find the student and return their credit
+        // 2. Refund the student
         userRepository.findByEmail(lesson.getStudentEmail()).ifPresent(student -> {
             student.setLessonCredits(student.getLessonCredits() + 1);
             userRepository.save(student);
         });
 
-        // 3. Draft and send the Cancellation email!
+        // 3. Send the cancellation email
         String subject = "Jun Studio: Lesson Update";
         String body = "Hello,\n\nUnfortunately, we had to cancel your lesson request for " +
                 lesson.getLessonDate() + " at " + lesson.getLessonTime() + " due to a scheduling conflict.\n\n" +
@@ -191,9 +199,16 @@ public class WebController {
 
         emailService.sendSimpleEmail(lesson.getStudentEmail(), subject, body);
 
-        // 4. Redirect back to the admin dashboard
+        // 4. THE FIX: Smart Redirect
+        // Check where the admin clicked the button from, and send them back there!
+        String referer = request.getHeader("Referer");
+        if (referer != null && referer.contains("/my-schedule")) {
+            return "redirect:/my-schedule?canceled=true";
+        }
+
         return "redirect:/dashboard?canceled=true";
     }
+
     @GetMapping("/schedule")
     public String showSchedulePage(){
         return "schedule";
@@ -307,43 +322,52 @@ public class WebController {
     @ResponseBody
     public List<String> getAvailableTimes(@RequestParam LocalDate date) {
 
-        // 1. Set Defaults (9 AM to 11 PM)
-        LocalTime start = LocalTime.of(9, 0);
-        LocalTime end = LocalTime.of(23, 0); // 11 PM
+        LocalTime start;
+        LocalTime end;
 
-        // 2. Check if Admin overrode this specific date
+        // 1. Check for Admin overrides FIRST
         ScheduleOverride override = overrideRepository.findByOverrideDate(date).orElse(null);
+
         if (override != null) {
+            // The Admin has set custom rules for this specific day
             if (override.isClosed()) return Collections.emptyList();
             start = override.getStartTime();
             end = override.getEndTime();
+        } else {
+            // 2. No override exists. Apply standard defaults.
+
+            // NEW: Block weekends by default
+            DayOfWeek day = date.getDayOfWeek();
+            if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+                // Return an empty list, which tells the frontend the studio is closed
+                return Collections.emptyList();
+            }
+
+            // Standard weekday hours (9 AM to 11 PM)
+            start = LocalTime.of(9, 0);
+            end = LocalTime.of(23, 0);
         }
 
         // 3. Get times that are already booked by other students
         List<Lesson> bookedLessons = lessonRepository.findByLessonDateAndStatusNot(date, "CANCELED");
         List<LocalTime> bookedTimes = bookedLessons.stream().map(Lesson::getLessonTime).toList();
 
-        // 4. Generate the hourly slots
+        // 4. Generate the hourly slots safely
         List<String> availableSlots = new ArrayList<>();
         LocalTime current = start;
 
         while (!current.isAfter(end)) {
 
-            // 1. Check if this specific hour has already passed today
             boolean isPastToday = date.isEqual(LocalDate.now()) && current.isBefore(LocalTime.now());
 
-            // 2. If it's in the future AND nobody else booked it, add it to the list
             if (!isPastToday && !bookedTimes.contains(current)) {
                 availableSlots.add(current.toString());
             }
 
-            // 3. THE FIX: Stop the loop if we just processed the final hour.
-            // This prevents 23:00 from wrapping around to 00:00 and looping infinitely!
             if (current.equals(end)) {
                 break;
             }
 
-            // 4. Move to the next hour
             current = current.plusHours(1);
         }
 
@@ -376,5 +400,72 @@ public class WebController {
         overrideRepository.save(override);
 
         return "redirect:/dashboard?overrideSaved=true";
+    }
+
+    // ==========================================
+    // RECEIPT: DOWNLOAD PDF
+    // ==========================================
+    @GetMapping("/receipt/pdf")
+    public void downloadReceiptPDF(
+            @RequestParam(defaultValue = "1") int qty,
+            HttpServletResponse response,
+            Principal principal) {
+
+        try {
+            User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+            int total = qty * 75; // Assuming $75 per credit
+
+            // Tell the browser to download this as a PDF file
+            response.setContentType("application/pdf");
+            response.setHeader("Content-Disposition", "attachment; filename=\"JunStudio_Receipt.pdf\"");
+
+            // Build the PDF Document
+            Document document = new Document();
+            PdfWriter.getInstance(document, response.getOutputStream());
+            document.open();
+
+            // Draw the PDF content
+            document.add(new Paragraph("JUN STUDIO", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24)));
+            document.add(new Paragraph("Official Payment Receipt\n\n"));
+
+            document.add(new Paragraph("Date: " + LocalDate.now()));
+            document.add(new Paragraph("Customer: " + user.getFirstName() + " " + user.getLastName()));
+            document.add(new Paragraph("Email: " + user.getEmail() + "\n\n"));
+
+            document.add(new Paragraph("--------------------------------------------------"));
+            document.add(new Paragraph("Item: Lesson Credit"));
+            document.add(new Paragraph("Quantity: " + qty));
+            document.add(new Paragraph("Price per unit: $75.00"));
+            document.add(new Paragraph("--------------------------------------------------"));
+            document.add(new Paragraph("TOTAL PAID: $" + total + ".00", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14)));
+
+            document.add(new Paragraph("\n\nThank you for choosing Jun Studio!"));
+
+            document.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ==========================================
+    // RECEIPT: SEND EMAIL
+    // ==========================================
+    @PostMapping("/receipt/email")
+    public String emailReceipt(@RequestParam(defaultValue = "1") int qty, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        int total = qty * 75;
+
+        String subject = "Your Receipt from Jun Studio";
+        String body = "Hello " + user.getFirstName() + ",\n\n" +
+                "Thank you for your purchase! Here is your receipt:\n\n" +
+                "Date: " + LocalDate.now() + "\n" +
+                "Item: " + qty + "x Lesson Credit(s)\n" +
+                "Total Paid: $" + total + ".00\n\n" +
+                "Your credits have been added to your account.\n- Jun Studio";
+
+        emailService.sendSimpleEmail(user.getEmail(), subject, body);
+
+        // Redirect back to dashboard with a new success flag
+        return "redirect:/dashboard?receiptEmailed=true";
     }
 }
