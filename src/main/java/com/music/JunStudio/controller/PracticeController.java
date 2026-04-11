@@ -19,6 +19,10 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Controller
 @RequestMapping("/practice")
@@ -35,26 +39,39 @@ public class PracticeController {
 
     // 1. Show the Gallery (with optional Search)
     @GetMapping
-    public String showPracticeGallery(@RequestParam(required = false) String search, Model model, Principal principal) {
+    public String showPracticeGallery(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,  // Default to Page 1 (Index 0)
+            @RequestParam(defaultValue = "2") int size, // Show 12 videos per page ----I manually set as 2 for testing purpose
+            Model model,
+            Principal principal) {
+
         User currentUser = userRepository.findByEmail(principal.getName()).orElseThrow();
         boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
 
-        List<PracticeVideo> videos;
-        if (search != null && !search.trim().isEmpty()) {
-            videos = videoRepository.findByTitleContainingIgnoreCaseOrUploaderNameContainingIgnoreCase(search, search);
+        // Build the pagination request (sorted newest first)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("uploadedAt").descending());
+
+        Page<PracticeVideo> videoPage;
+
+        if (isAdmin) {
+            if (search != null && !search.trim().isEmpty()) {
+                videoPage = videoRepository.findByTitleContainingIgnoreCaseOrUploaderNameContainingIgnoreCase(search, search, pageable);
+            } else {
+                videoPage = videoRepository.findAll(pageable); // Built-in method
+            }
         } else {
-            videos = videoRepository.findAllByOrderByUploadedAtDesc();
+            if (search != null && !search.trim().isEmpty()) {
+                videoPage = videoRepository.searchForStudent(search, currentUser.getEmail(), pageable);
+            } else {
+                videoPage = videoRepository.findAllForStudent(currentUser.getEmail(), pageable);
+            }
         }
 
-        // NEW: Filter the list!
-        // If they are NOT an admin, remove videos that are private AND don't belong to them.
-        if (!isAdmin) {
-            videos = videos.stream()
-                    .filter(v -> !v.isPrivate() || v.getUploaderEmail().equals(currentUser.getEmail()))
-                    .toList();
-        }
+        // Pass the entire Page object to Thymeleaf, along with the search term
+        model.addAttribute("videoPage", videoPage);
+        model.addAttribute("search", search);
 
-        model.addAttribute("videos", videos);
         return "practice-gallery";
     }
 

@@ -23,7 +23,7 @@
     </form>
 
     <div class="row row-cols-1 row-cols-md-3 g-4">
-        <div class="col" th:each="vid : ${videos}">
+        <div class="col" th:each="vid : ${videoPage.content}">
             <div class="card h-100 shadow-sm">
                 <div class="bg-dark text-white d-flex align-items-center justify-content-center" style="height: 200px;">
                     <i class="bi bi-play-circle" style="font-size: 3rem;"></i>
@@ -41,7 +41,26 @@
                 </div>
             </div>
         </div>
+
     </div>
+    <nav th:if="${videoPage.totalPages > 1}" class="mt-5" aria-label="Video gallery pagination">
+        <ul class="pagination justify-content-center">
+
+            <li class="page-item" th:classappend="${videoPage.first ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/practice(page=${videoPage.number - 1}, search=${search})}">Previous</a>
+            </li>
+
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, videoPage.totalPages - 1)}"
+                th:classappend="${videoPage.number == i ? 'active' : ''}">
+                <a class="page-link" th:href="@{/practice(page=${i}, search=${search})}" th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${videoPage.last ? 'disabled' : ''}">
+                <a class="page-link" th:href="@{/practice(page=${videoPage.number + 1}, search=${search})}">Next</a>
+            </li>
+
+        </ul>
+    </nav>
     <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
