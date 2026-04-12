@@ -72,6 +72,9 @@ public class PracticeController {
         model.addAttribute("videoPage", videoPage);
         model.addAttribute("search", search);
 
+        //THE FIX: Tell the HTML navigation bar this is an Admin
+        model.addAttribute("isAdmin", isAdmin);
+
         return "practice-gallery";
     }
 

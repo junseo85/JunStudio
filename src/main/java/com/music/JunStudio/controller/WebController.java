@@ -210,7 +210,18 @@ public class WebController {
     }
 
     @GetMapping("/schedule")
-    public String showSchedulePage(){
+    public String showSchedulePage(Model model, Principal principal) {
+
+        // 1. Find who is currently looking at the page
+        User currentUser = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2. Check if they are an Admin
+        boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
+
+        // 3. Pass that flag to your Header.html!
+        model.addAttribute("isAdmin", isAdmin);
+
         return "schedule";
     }
 
@@ -234,24 +245,49 @@ public class WebController {
             return "redirect:/schedule?error=pastDate";
         }
 
-        // 3. NEW: Check for Double-Booking!
-        // We look for any existing lesson at this exact date and time that is NOT canceled.
-        boolean isTimeTaken = lessonRepository.existsByLessonDateAndLessonTimeAndStatusNot(lessonDate, lessonTime, "CANCELED");
+        // ---------------------------------------------------------
+        // 3. HARD SECURITY: Enforce Schedule Rules (Overrides & Weekends)
+        // ---------------------------------------------------------
+        ScheduleOverride override = overrideRepository.findByOverrideDate(lessonDate).orElse(null);
 
+        if (override != null) {
+            // Rule A: The Admin set an override. Is the whole day closed?
+            if (override.isClosed()) {
+                return "redirect:/schedule?error=studioClosed";
+            }
+            // Rule B: Ensure they aren't booking outside the custom override hours
+            if (lessonTime.isBefore(override.getStartTime()) || lessonTime.isAfter(override.getEndTime())) {
+                return "redirect:/schedule?error=outsideHours";
+            }
+        } else {
+            // No override exists. Apply standard studio rules.
+            // Rule C: Block Weekends
+            DayOfWeek day = lessonDate.getDayOfWeek();
+            if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+                return "redirect:/schedule?error=weekendBlocked";
+            }
+            // Rule D: Enforce standard 9 AM to 11 PM hours
+            if (lessonTime.isBefore(LocalTime.of(9, 0)) || lessonTime.isAfter(LocalTime.of(23, 0))) {
+                return "redirect:/schedule?error=outsideHours";
+            }
+        }
+        // ---------------------------------------------------------
+
+        // 4. Check for Double-Booking
+        boolean isTimeTaken = lessonRepository.existsByLessonDateAndLessonTimeAndStatusNot(lessonDate, lessonTime, "CANCELED");
         if (isTimeTaken) {
-            // Bounce them back to the form with a specific error flag
             return "redirect:/schedule?error=timeTaken";
         }
 
-        // 4. Everything is valid! Save the lesson.
+        // 5. Everything is valid! Save the lesson.
         Lesson newLesson = new Lesson();
         newLesson.setStudentEmail(currentUser.getEmail());
         newLesson.setLessonDate(lessonDate);
         newLesson.setLessonTime(lessonTime);
-        newLesson.setStatus("PENDING"); // Explicitly mark as pending
+        newLesson.setStatus("PENDING");
         lessonRepository.save(newLesson);
 
-        // 5. Deduct the credit
+        // 6. Deduct the credit
         currentUser.setLessonCredits(currentUser.getLessonCredits() - 1);
         userRepository.save(currentUser);
 
