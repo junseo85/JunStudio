@@ -43,4 +43,14 @@ public class User {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    // Determines if the user can log in or appear in active lists
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
+    // Links a Student to their specific Teacher.
+    // (This will be null if the user IS a teacher or admin)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private User assignedTeacher;
 }

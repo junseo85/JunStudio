@@ -31,4 +31,10 @@ public class Lesson {
     // Automatically set new requests to "PENDING"
     @Column(nullable = false)
     private String status = "PENDING";
+
+    // Links this specific lesson to a full semester block.
+    // This is nullable, meaning single makeup/extra lessons can still exist perfectly fine!
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semester_registration_id")
+    private SemesterRegistration semesterRegistration;
 }
