@@ -21,4 +21,10 @@ public class ScheduleOverride {
 
     // If true, the studio is completely closed this day
     private boolean isClosed;
+
+    // If null, it's a global studio closure.
+    // If set, it only applies to this specific teacher.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private User teacher;
 }

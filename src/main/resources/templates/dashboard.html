@@ -26,7 +26,7 @@
 
   <h1 th:text="${pageTitle}" class="mb-4">Welcome</h1>
 
-  <div th:if="${isAdmin}">
+  <div th:if="${isAdmin or isTeacher}">
 
     <div class="card shadow-sm">
       <div class="card-header bg-dark text-white">
@@ -167,6 +167,64 @@
 
   </div>
 
+  <div th:if="${isAdmin or isTeacher}">
+    <h3 class="mb-4">My Studio: Semester Requests</h3>
+
+    <div th:if="${param.slotAssigned}" class="alert alert-success">
+      Student time slot successfully assigned!
+    </div>
+
+    <div class="row">
+      <div class="col-md-6 mb-4" th:each="req : ${pendingRequests}">
+        <div class="card shadow-sm border-warning">
+          <div class="card-header bg-warning text-dark fw-bold">
+            Review Request: <span th:text="${req.student.firstName + ' ' + req.student.lastName}">Student Name</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Term:</strong> <span th:text="${req.term + ' ' + req.year}">Spring 2026</span></p>
+            <p><strong>1st Choice:</strong> <span th:text="${req.preferredDayOne}">MONDAY</span></p>
+            <p th:if="${req.preferredDayTwo != null}"><strong>2nd Choice:</strong> <span th:text="${req.preferredDayTwo}">TUESDAY</span></p>
+
+            <div th:if="${req.memo != null and !req.memo.isEmpty()}" class="alert alert-light border">
+              <strong>Student Note:</strong> <em th:text="${req.memo}">...</em>
+            </div>
+
+            <hr>
+
+            <form th:action="@{/semester/assign}" method="POST">
+              <input type="hidden" name="registrationId" th:value="${req.id}" />
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label text-muted small">Finalize Day</label>
+                  <select name="assignedDay" class="form-select form-select-sm" required>
+                    <option th:value="${req.preferredDayOne}" th:text="${req.preferredDayOne} + ' (1st Choice)'" selected></option>
+                    <option th:if="${req.preferredDayTwo != null}" th:value="${req.preferredDayTwo}" th:text="${req.preferredDayTwo} + ' (2nd Choice)'"></option>
+                    <option disabled>──────────</option>
+                    <option value="MONDAY">Monday</option>
+                    <option value="TUESDAY">Tuesday</option>
+                    <option value="WEDNESDAY">Wednesday</option>
+                    <option value="THURSDAY">Thursday</option>
+                    <option value="FRIDAY">Friday</option>
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label text-muted small">Finalize Time</label>
+                  <input type="time" name="assignedTime" class="form-control form-control-sm" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary w-100">Confirm & Assign Slot</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div th:if="${pendingRequests.isEmpty()}" class="col-12 text-center text-muted py-5">
+        <h5>No pending semester requests.</h5>
+        <p>When a student registers for your class, their request will appear here.</p>
+      </div>
+    </div>
+  </div>
 
   <div th:if="${!isAdmin}">
 

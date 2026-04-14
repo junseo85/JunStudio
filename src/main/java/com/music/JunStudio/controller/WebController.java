@@ -3,9 +3,11 @@ package com.music.JunStudio.controller;
 import com.music.JunStudio.dto.AdminLessonDTO;
 import com.music.JunStudio.model.Lesson;
 import com.music.JunStudio.model.ScheduleOverride;
+import com.music.JunStudio.model.SemesterRegistration;
 import com.music.JunStudio.model.User;
 import com.music.JunStudio.repository.LessonRepository;
 import com.music.JunStudio.repository.ScheduleOverrideRepository;
+import com.music.JunStudio.repository.SemesterRegistrationRepository;
 import com.music.JunStudio.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +24,7 @@ import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfWriter;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
-
+import java.time.temporal.TemporalAdjusters;
 import java.time.LocalDate;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -34,6 +36,9 @@ import java.time.DayOfWeek;
 
 @Controller
 public class WebController {
+
+    @Autowired
+    private SemesterRegistrationRepository registrationRepository; //inject new semester registration repository
 
     @Autowired
     private EmailService emailService;
@@ -118,32 +123,47 @@ public class WebController {
 
         // Check the role
         boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
-        model.addAttribute("isAdmin", isAdmin);
+        boolean isTeacher = "ROLE_TEACHER".equals(currentUser.getRole());
 
-        if (isAdmin) {
-            // ADMIN VIEW: Grab pending requests and attach user details
+        // Pass both flags to the HTML
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isTeacher", isTeacher);
+
+        // ==========================================
+        // STAFF VIEW (Admins & Teachers see the same dashboard)
+        // ==========================================
+        if (isAdmin || isTeacher) {
+
+            // 1. Single Makeup Lessons (Shared)
             List<Lesson> pendingLessons = lessonRepository.findByStatus("PENDING");
             List<AdminLessonDTO> adminLessons = new ArrayList<>();
 
             for (Lesson lesson : pendingLessons) {
-                // Find the user who made the request
                 User student = userRepository.findByEmail(lesson.getStudentEmail()).orElse(new User());
                 adminLessons.add(new AdminLessonDTO(
-                        lesson.getId(),
-                        student.getFirstName(),
-                        student.getLastName(),
-                        student.getEmail(),
-                        student.getPhoneNumber(),
-                        lesson.getLessonDate(),
-                        lesson.getLessonTime()
+                        lesson.getId(), student.getFirstName(), student.getLastName(),
+                        student.getEmail(), student.getPhoneNumber(),
+                        lesson.getLessonDate(), lesson.getLessonTime()
                 ));
             }
             model.addAttribute("pendingLessons", adminLessons);
-            // NEW: Fetch all schedule overrides to display
+
+            // 2. Schedule Overrides (Shared)
             List<ScheduleOverride> overrides = overrideRepository.findAll();
             model.addAttribute("overrides", overrides);
+
+            // 3. Semester Requests (Teachers see their own, Admins see all)
+            if (isAdmin) {
+                model.addAttribute("pendingRequests", registrationRepository.findAll().stream()
+                        .filter(r -> "PENDING".equals(r.getStatus())).toList());
+            } else {
+                model.addAttribute("pendingRequests", registrationRepository.findByTeacherIdAndStatus(currentUser.getId(), "PENDING"));
+            }
+
         } else {
-            // STUDENT VIEW: Grab their approved scheduled lessons
+            // ==========================================
+            // STUDENT VIEW
+            // ==========================================
             List<Lesson> scheduledLessons = lessonRepository.findByStudentEmailAndStatus(currentUser.getEmail(), "SCHEDULED");
             model.addAttribute("scheduledLessons", scheduledLessons);
         }
@@ -248,29 +268,34 @@ public class WebController {
         // ---------------------------------------------------------
         // 3. HARD SECURITY: Enforce Schedule Rules (Overrides & Weekends)
         // ---------------------------------------------------------
-        ScheduleOverride override = overrideRepository.findByOverrideDate(lessonDate).orElse(null);
+        List<ScheduleOverride> overrides = overrideRepository.findByOverrideDate(lessonDate);
+        User teacher = currentUser.getAssignedTeacher(); // Find out who their teacher is
 
-        if (override != null) {
-            // Rule A: The Admin set an override. Is the whole day closed?
-            if (override.isClosed()) {
-                return "redirect:/schedule?error=studioClosed";
-            }
-            // Rule B: Ensure they aren't booking outside the custom override hours
-            if (lessonTime.isBefore(override.getStartTime()) || lessonTime.isAfter(override.getEndTime())) {
-                return "redirect:/schedule?error=outsideHours";
-            }
-        } else {
-            // No override exists. Apply standard studio rules.
-            // Rule C: Block Weekends
-            DayOfWeek day = lessonDate.getDayOfWeek();
-            if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
-                return "redirect:/schedule?error=weekendBlocked";
-            }
-            // Rule D: Enforce standard 9 AM to 11 PM hours
-            if (lessonTime.isBefore(LocalTime.of(9, 0)) || lessonTime.isAfter(LocalTime.of(23, 0))) {
-                return "redirect:/schedule?error=outsideHours";
+        for (ScheduleOverride override : overrides) {
+            // Check if this override is Global (null) OR belongs to this student's teacher
+            if (override.getTeacher() == null ||
+                    (teacher != null && override.getTeacher().getId().equals(teacher.getId()))) {
+
+                // Rule A: Is the day fully closed?
+                if (override.isClosed()) {
+                    return "redirect:/schedule?error=studioClosed";
+                }
+                // Rule B: Ensure they aren't booking outside custom hours
+                if (lessonTime.isBefore(override.getStartTime()) || lessonTime.isAfter(override.getEndTime())) {
+                    return "redirect:/schedule?error=outsideHours";
+                }
             }
         }
+
+        // Rule C & D: Standard rules if no override was found above
+        DayOfWeek day = lessonDate.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return "redirect:/schedule?error=weekendBlocked";
+        }
+        if (lessonTime.isBefore(LocalTime.of(9, 0)) || lessonTime.isAfter(LocalTime.of(23, 0))) {
+            return "redirect:/schedule?error=outsideHours";
+        }
+        // ---------------------------------------------------------
         // ---------------------------------------------------------
 
         // 4. Check for Double-Booking
@@ -356,44 +381,49 @@ public class WebController {
 
     @GetMapping("/api/available-times")
     @ResponseBody
-    public List<String> getAvailableTimes(@RequestParam LocalDate date) {
+    public List<String> getAvailableTimes(@RequestParam LocalDate date, Principal principal) {
 
-        LocalTime start;
-        LocalTime end;
+        // 1. Find the current user and their assigned teacher
+        User currentUser = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        User teacher = currentUser.getAssignedTeacher();
 
-        // 1. Check for Admin overrides FIRST
-        ScheduleOverride override = overrideRepository.findByOverrideDate(date).orElse(null);
+        // Standard weekday hours
+        LocalTime start = LocalTime.of(9, 0);
+        LocalTime end = LocalTime.of(23, 0);
 
-        if (override != null) {
-            // The Admin has set custom rules for this specific day
-            if (override.isClosed()) return Collections.emptyList();
-            start = override.getStartTime();
-            end = override.getEndTime();
-        } else {
-            // 2. No override exists. Apply standard defaults.
-
-            // NEW: Block weekends by default
-            DayOfWeek day = date.getDayOfWeek();
-            if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
-                // Return an empty list, which tells the frontend the studio is closed
-                return Collections.emptyList();
-            }
-
-            // Standard weekday hours (9 AM to 11 PM)
-            start = LocalTime.of(9, 0);
-            end = LocalTime.of(23, 0);
+        // 2. Block weekends by default
+        DayOfWeek day = date.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return Collections.emptyList();
         }
 
-        // 3. Get times that are already booked by other students
+        // 3. THE FIX: Check for Global or Teacher-specific overrides using a List
+        List<ScheduleOverride> overrides = overrideRepository.findByOverrideDate(date);
+
+        for (ScheduleOverride override : overrides) {
+            // Does this apply to the whole studio (null) OR this specific teacher?
+            if (override.getTeacher() == null ||
+                    (teacher != null && override.getTeacher().getId().equals(teacher.getId()))) {
+
+                // If they are closed, return the empty list immediately
+                if (override.isClosed()) return Collections.emptyList();
+
+                // Otherwise, adjust the start and end times
+                start = override.getStartTime();
+                end = override.getEndTime();
+            }
+        }
+
+        // 4. Get times that are already booked
         List<Lesson> bookedLessons = lessonRepository.findByLessonDateAndStatusNot(date, "CANCELED");
         List<LocalTime> bookedTimes = bookedLessons.stream().map(Lesson::getLessonTime).toList();
 
-        // 4. Generate the hourly slots safely
+        // 5. Generate the hourly slots safely
         List<String> availableSlots = new ArrayList<>();
         LocalTime current = start;
 
         while (!current.isAfter(end)) {
-
             boolean isPastToday = date.isEqual(LocalDate.now()) && current.isBefore(LocalTime.now());
 
             if (!isPastToday && !bookedTimes.contains(current)) {
@@ -415,22 +445,37 @@ public class WebController {
             @RequestParam LocalDate overrideDate,
             @RequestParam(required = false) LocalTime startTime,
             @RequestParam(required = false) LocalTime endTime,
-            @RequestParam(required = false, defaultValue = "false") boolean isClosed) {
+            @RequestParam(required = false, defaultValue = "false") boolean isClosed,
+            Principal principal) {
 
-        // Check if an override already exists for this date, or create a new one
-        ScheduleOverride override = overrideRepository.findByOverrideDate(overrideDate)
+        User currentUser = userRepository.findByEmail(principal.getName()).orElseThrow();
+        boolean isTeacher = "ROLE_TEACHER".equals(currentUser.getRole());
+
+        // Find existing overrides for this date
+        List<ScheduleOverride> existingOverrides = overrideRepository.findByOverrideDate(overrideDate);
+
+        // Find if THIS specific user already has an override for this date, otherwise create new
+        ScheduleOverride override = existingOverrides.stream()
+                .filter(o -> isTeacher ?
+                        (o.getTeacher() != null && o.getTeacher().getId().equals(currentUser.getId())) :
+                        (o.getTeacher() == null)) // Admins manage the null (global) override
+                .findFirst()
                 .orElse(new ScheduleOverride());
 
         override.setOverrideDate(overrideDate);
         override.setClosed(isClosed);
 
-        // If they are closed, we don't care about the hours
         if (!isClosed) {
             override.setStartTime(startTime);
             override.setEndTime(endTime);
         } else {
             override.setStartTime(null);
             override.setEndTime(null);
+        }
+
+        // The Magic Rule: Bind it to the teacher if they are the one creating it
+        if (isTeacher) {
+            override.setTeacher(currentUser);
         }
 
         overrideRepository.save(override);
@@ -503,6 +548,95 @@ public class WebController {
 
         // Redirect back to dashboard with a new success flag
         return "redirect:/dashboard?receiptEmailed=true";
+    }
+
+    //Teacher Assigns a Time Slot
+    @PostMapping("/semester/assign")
+    public String assignSemesterSlot( @RequestParam Long registrationId, @RequestParam DayOfWeek assignedDay, @RequestParam LocalTime assignedTime){
+        SemesterRegistration registration = registrationRepository.findById(registrationId).orElseThrow(() -> new RuntimeException("Registration not found"));
+
+        //update the registration with the permanent schedule
+        registration.setAssignedDay(assignedDay);
+        registration.setAssignedTime(assignedTime);
+        registration.setStatus("ASSIGNED");
+
+        registrationRepository.save(registration);
+
+        // ==========================================
+        // 2. THE LESSON GENERATOR (16 Weeks)
+        // ==========================================
+
+        // A. Determine the exact start date based on the term
+        int startMonth = switch (registration.getTerm()) {
+            case "SPRING" -> 1; // January 1st
+            case "SUMMER" -> 6; // June 1st
+            case "FALL" -> 9;   // September 1st
+            default -> LocalDate.now().getMonthValue();
+        };
+
+        LocalDate semesterStart = LocalDate.of(registration.getYear(), startMonth, 1);
+
+        // B. Find the very first occurrence of the assigned day in that month
+        // (e.g., If Sept 1st is a Wednesday, and they chose Friday, this finds Sept 3rd)
+        LocalDate firstLessonDate = semesterStart.with(TemporalAdjusters.nextOrSame(assignedDay));
+
+        // C. Generate the 16 lessons in memory (Smart Loop)
+        List<Lesson> semesterLessons = new ArrayList<>();
+        LocalDate currentDate = firstLessonDate;
+        int lessonsBooked = 0;
+
+        // Keep looping until we successfully book exactly 16 lessons
+        while (lessonsBooked < 16) {
+
+            // 1. Check if this specific date has an override (Holiday OR Teacher Blocked)
+            List<ScheduleOverride> dailyOverrides = overrideRepository.findByOverrideDate(currentDate);
+            boolean isDateBlocked = false;
+
+            for (ScheduleOverride override : dailyOverrides) {
+
+                // Does this override apply to us? (Either it's global, or it belongs to our teacher)
+                boolean appliesToUs = (override.getTeacher() == null) ||
+                        (override.getTeacher().getId().equals(registration.getTeacher().getId()));
+
+                if (appliesToUs) {
+                    if (override.isClosed()) {
+                        isDateBlocked = true;
+                        break; // Stop checking, the day is dead
+                    } else if (assignedTime.isBefore(override.getStartTime()) || assignedTime.isAfter(override.getEndTime())) {
+                        isDateBlocked = true;
+                        break; // Stop checking, the time is outside their custom hours
+                    }
+                }
+            }
+
+            // 2. If the date is NOT blocked, create the lesson
+            if (!isDateBlocked) {
+                Lesson lesson = new Lesson();
+                lesson.setStudentEmail(registration.getStudent().getEmail());
+                lesson.setLessonDate(currentDate);
+                lesson.setLessonTime(assignedTime);
+                lesson.setStatus("SCHEDULED");
+                lesson.setSemesterRegistration(registration);
+
+                semesterLessons.add(lesson);
+
+                // Only count up when we successfully place a lesson!
+                lessonsBooked++;
+            }
+
+            // 3. Always jump exactly one week forward to check the next date
+            currentDate = currentDate.plusWeeks(1);
+
+            // Safety measure: Prevent infinite loops just in case the studio is closed for a whole year
+            if (currentDate.isAfter(semesterStart.plusYears(1))) {
+                break;
+            }
+        }
+
+        // D. Save all 16 lessons to the database in one highly efficient query
+        lessonRepository.saveAll(semesterLessons);
+
+        return "redirect://dashboard?slotAssigned=true";
     }
 
 
