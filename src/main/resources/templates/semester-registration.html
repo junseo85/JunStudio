@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Semester Registration - Jun Studio</title>
+</head>
+<body>
+<main class="container mt-5">
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white py-3">
+                    <h4 class="mb-0">Semester Registration</h4>
+                </div>
+                <div class="card-body p-4">
+
+                    <p class="text-muted mb-4">Select your preferred instructor and schedule for the upcoming semester. Your teacher will review your request and assign your final time slot.</p>
+
+                    <form th:action="@{/semester/register}" method="POST">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select Instructor</label>
+                            <select name="teacherId" class="form-select" required>
+                                <option value="" disabled selected>Choose a teacher...</option>
+                                <option th:each="teacher : ${teachers}"
+                                        th:value="${teacher.id}"
+                                        th:text="${teacher.firstName + ' ' + teacher.lastName}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Semester</label>
+                                <select name="term" class="form-select" required>
+                                    <option value="" disabled selected>Choose term...</option>
+                                    <option value="SPRING">Spring (Jan - May)</option>
+                                    <option value="SUMMER">Summer (Jun - Aug)</option>
+                                    <option value="FALL">Fall (Sep - Dec)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Year</label>
+                                <select name="year" class="form-select" required>
+                                    <option th:value="${currentYear}" th:text="${currentYear}"></option>
+                                    <option th:value="${nextYear}" th:text="${nextYear}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">1st Choice Day</label>
+                                <select name="preferredDayOne" class="form-select" required>
+                                    <option value="" disabled selected>Select a day...</option>
+                                    <option value="MONDAY">Monday</option>
+                                    <option value="TUESDAY">Tuesday</option>
+                                    <option value="WEDNESDAY">Wednesday</option>
+                                    <option value="THURSDAY">Thursday</option>
+                                    <option value="FRIDAY">Friday</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">2nd Choice Day <span class="text-muted fw-normal">(Optional)</span></label>
+                                <select name="preferredDayTwo" class="form-select">
+                                    <option value="">No preference</option>
+                                    <option value="MONDAY">Monday</option>
+                                    <option value="TUESDAY">Tuesday</option>
+                                    <option value="WEDNESDAY">Wednesday</option>
+                                    <option value="THURSDAY">Thursday</option>
+                                    <option value="FRIDAY">Friday</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Message to Instructor <span class="text-muted fw-normal">(Optional)</span></label>
+                            <textarea name="memo" class="form-control" rows="3" placeholder="Let your teacher know about specific time preferences (e.g., 'After 4 PM only') or any scheduling conflicts..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Submit Registration Request</button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

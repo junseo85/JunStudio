@@ -504,4 +504,6 @@ public class WebController {
         // Redirect back to dashboard with a new success flag
         return "redirect:/dashboard?receiptEmailed=true";
     }
+
+
 }
