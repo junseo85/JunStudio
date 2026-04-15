@@ -12,4 +12,5 @@ public interface SemesterRegistrationRepository extends JpaRepository<SemesterRe
     // We will need these later for the Teacher and Admin dashboards!
     List<SemesterRegistration> findByTeacherIdAndStatus(Long teacherId, String status);
     List<SemesterRegistration> findByStudentId(Long studentId);
+    List<SemesterRegistration> findByStatus(String status);
 }

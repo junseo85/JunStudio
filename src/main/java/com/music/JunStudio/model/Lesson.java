@@ -37,4 +37,9 @@ public class Lesson {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_registration_id")
     private SemesterRegistration semesterRegistration;
+
+    // @Transient means this won't create a new column in your MySQL database.
+    // It is just a temporary holder to pass the teacher's name to the HTML.
+    @Transient
+    private String teacherName;
 }

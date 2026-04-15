@@ -16,4 +16,5 @@ public class AdminLessonDTO {
     private String phoneNumber;
     private LocalDate lessonDate;
     private LocalTime lessonTime;
+    private String teacherName;
 }

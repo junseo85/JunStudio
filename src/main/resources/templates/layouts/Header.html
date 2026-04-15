@@ -11,8 +11,25 @@
                     <a class="nav-link" href="/dashboard">Dashboard </a>
                 </li>
 
-                <li class="nav-item">
-                    <a class="nav-link" href="/schedule">Request Lesson</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="scheduleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Schedule
+                    </a>
+                    <ul class="dropdown-menu shadow-sm" aria-labelledby="scheduleDropdown">
+                        <li>
+                            <a class="dropdown-item" th:href="@{/semester/register}">
+                                <strong>Semester Registration</strong><br>
+                                <small class="text-muted">Apply for a 16-week term</small>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{/schedule}">
+                                <strong>Single / Make-up Lesson</strong><br>
+                                <small class="text-muted">Book a one-off time slot</small>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
 
                 <li class="nav-item">
@@ -28,6 +45,31 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="/admin/users">Manage Users</a></li>
                         <li><a class="dropdown-item" href="/admin/reports">Activity Reports</a></li>
+                    </ul>
+                </li>
+
+            </ul>
+            <ul class="navbar-nav ms-auto">
+
+                <li class="nav-item" sec:authorize="isAnonymous()">
+                    <a class="nav-link" th:href="@{/login}">Sign In</a>
+                </li>
+                <li class="nav-item" sec:authorize="isAnonymous()">
+                    <a class="btn btn-outline-primary ms-2" th:href="@{/register}">Sign Up</a>
+                </li>
+
+                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle fw-bold" href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span sec:authentication="name">User</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userProfileDropdown">
+                        <li><a class="dropdown-item" th:href="@{/dashboard}">My Dashboard</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="POST" class="m-0 p-0">
+                                <button type="submit" class="dropdown-item text-danger">Sign Out</button>
+                            </form>
+                        </li>
                     </ul>
                 </li>
 

@@ -12,4 +12,6 @@ public interface ScheduleOverrideRepository extends JpaRepository<ScheduleOverri
 
     // CHANGED: Returns a List instead of Optional
     List<ScheduleOverride> findByOverrideDate(LocalDate overrideDate);
+    // Finds overrides belonging to this teacher, OR where teacher is null (Global holidays)
+    List<ScheduleOverride> findByTeacherIdOrTeacherIsNull(Long teacherId);
 }

@@ -27,147 +27,6 @@
   <h1 th:text="${pageTitle}" class="mb-4">Welcome</h1>
 
   <div th:if="${isAdmin or isTeacher}">
-
-    <div class="card shadow-sm">
-      <div class="card-header bg-dark text-white">
-        <h5 class="mb-0">Pending Lesson Requests</h5>
-      </div>
-      <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-          <tr>
-            <th>Student Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Action</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="lesson : ${pendingLessons}">
-            <td th:text="${lesson.firstName + ' ' + lesson.lastName}">John Doe</td>
-            <td th:text="${lesson.email}">email@test.com</td>
-            <td th:text="${lesson.phoneNumber}">555-5555</td>
-            <td th:text="${lesson.lessonDate}">2026-05-01</td>
-            <td th:text="${lesson.lessonTime}">14:00</td>
-            <td>
-              <div class="d-flex gap-2">
-                <form th:action="@{/lesson/approve}" method="POST" class="m-0">
-                  <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
-                  <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                </form>
-
-                <form th:action="@{/lesson/cancel}" method="POST" class="m-0">
-                  <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          <tr th:if="${#lists.isEmpty(pendingLessons)}">
-            <td colspan="6" class="text-center py-4 text-muted">No pending requests at this time.</td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div> <hr class="my-5">
-    <h3 class="mb-4">Studio Settings</h3>
-
-    <div class="row">
-
-      <div class="col-md-5 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-header bg-secondary text-white">
-            <h5 class="mb-0">Set Schedule Override</h5>
-          </div>
-          <div class="card-body">
-            <form th:action="@{/admin/override}" method="POST">
-              <div class="mb-3">
-                <label class="form-label">Date to Override</label>
-                <input type="date" name="overrideDate" class="form-control" required>
-              </div>
-
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="isClosed" name="isClosed" value="true">
-                <label class="form-check-label text-danger fw-bold" for="isClosed">Studio Closed Entire Day</label>
-              </div>
-
-              <div class="row" id="timeInputs">
-                <div class="col-6 mb-3">
-                  <label class="form-label">Start Time</label>
-                  <input type="time" name="startTime" id="startTime" class="form-control">
-                </div>
-                <div class="col-6 mb-3">
-                  <label class="form-label">End Time</label>
-                  <input type="time" name="endTime" id="endTime" class="form-control">
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-warning w-100">Save Override</button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-7">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="mb-0">Active Overrides</h5>
-          </div>
-          <div class="card-body p-0">
-            <table class="table table-sm table-hover mb-0">
-              <thead>
-              <tr>
-                <th>Date</th>
-                <th>Status / Hours</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr th:each="ovr : ${overrides}">
-                <td th:text="${ovr.overrideDate}" class="fw-bold"></td>
-                <td>
-                  <span th:if="${ovr.isClosed}" class="badge bg-danger">CLOSED</span>
-                  <span th:if="${!ovr.isClosed}" class="text-muted">
-                  <span th:text="${ovr.startTime}"></span> - <span th:text="${ovr.endTime}"></span>
-                </span>
-                </td>
-              </tr>
-              <tr th:if="${#lists.isEmpty(overrides)}">
-                <td colspan="2" class="text-center py-3 text-muted">No overrides set.</td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script>
-      document.getElementById('isClosed').addEventListener('change', function() {
-        const timeInputs = document.getElementById('timeInputs');
-        const start = document.getElementById('startTime');
-        const end = document.getElementById('endTime');
-
-        if (this.checked) {
-          timeInputs.style.opacity = '0.4';
-          start.disabled = true;
-          end.disabled = true;
-          start.removeAttribute('required');
-          end.removeAttribute('required');
-        } else {
-          timeInputs.style.opacity = '1';
-          start.disabled = false;
-          end.disabled = false;
-          start.setAttribute('required', 'required');
-          end.setAttribute('required', 'required');
-        }
-      });
-    </script>
-
-  </div>
-
-  <div th:if="${isAdmin or isTeacher}">
     <h3 class="mb-4">My Studio: Semester Requests</h3>
 
     <div th:if="${param.slotAssigned}" class="alert alert-success">
@@ -225,6 +84,148 @@
       </div>
     </div>
   </div>
+  <div th:if="${isAdmin or isTeacher}">
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Single / Make-up Lesson Requests</h5>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+          <tr>
+            <th>Student Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Action</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="lesson : ${pendingLessons}">
+            <td th:text="${lesson.firstName + ' ' + lesson.lastName}">John Doe</td>
+            <td th:text="${lesson.email}">email@test.com</td>
+            <td th:text="${lesson.phoneNumber}">555-5555</td>
+            <td th:text="${lesson.lessonDate}">2026-05-01</td>
+            <td th:text="${lesson.lessonTime}">14:00</td>
+            <td>
+              <div class="d-flex gap-2">
+                <form th:action="@{/lesson/approve}" method="POST" class="m-0">
+                  <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                  <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                </form>
+
+                <form th:action="@{/lesson/cancel}" method="POST" class="m-0">
+                  <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(pendingLessons)}">
+            <td colspan="6" class="text-center py-4 text-muted">No pending requests at this time.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div> <hr class="my-5">
+    <h3 class="mb-4">Studio Calendar Settings</h3>
+
+    <div class="row">
+
+      <div class="col-md-5 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Set Schedule Override</h5>
+          </div>
+          <div class="card-body">
+            <form th:action="@{/admin/override}" method="POST">
+              <div class="mb-3">
+                <label class="form-label">Date to Override</label>
+                <input type="date" name="overrideDate" class="form-control" required>
+              </div>
+
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="isClosed" name="isClosed" value="true">
+                <label class="form-check-label text-danger fw-bold" for="isClosed">Studio Closed Entire Day</label>
+              </div>
+
+              <div class="row" id="timeInputs">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Start Time</label>
+                  <input type="time" name="startTime" id="startTime" class="form-control">
+                </div>
+                <div class="col-6 mb-3">
+                  <label class="form-label">End Time</label>
+                  <input type="time" name="endTime" id="endTime" class="form-control">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-warning w-100">Save Override</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-7">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Workday Overrides</h5>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status / Hours</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="ovr : ${overrides}">
+                <td th:text="${ovr.overrideDate}" class="fw-bold"></td>
+                <td>
+                  <span th:if="${ovr.isClosed}" class="badge bg-danger">CLOSED</span>
+                  <span th:if="${!ovr.isClosed}" class="text-muted">
+                  <span th:text="${ovr.startTime}"></span> - <span th:text="${ovr.endTime}"></span>
+                </span>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(overrides)}">
+                <td colspan="2" class="text-center py-3 text-muted">No overrides set.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById('isClosed').addEventListener('change', function() {
+        const timeInputs = document.getElementById('timeInputs');
+        const start = document.getElementById('startTime');
+        const end = document.getElementById('endTime');
+
+        if (this.checked) {
+          timeInputs.style.opacity = '0.4';
+          start.disabled = true;
+          end.disabled = true;
+          start.removeAttribute('required');
+          end.removeAttribute('required');
+        } else {
+          timeInputs.style.opacity = '1';
+          start.disabled = false;
+          end.disabled = false;
+          start.setAttribute('required', 'required');
+          end.setAttribute('required', 'required');
+        }
+      });
+    </script>
+
+  </div>
+
+
 
   <div th:if="${!isAdmin}">
 

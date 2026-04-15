@@ -129,42 +129,54 @@ public class WebController {
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("isTeacher", isTeacher);
 
-        // ==========================================
-        // STAFF VIEW (Admins & Teachers see the same dashboard)
-        // ==========================================
-        if (isAdmin || isTeacher) {
+        if (isAdmin) {
+            // ==========================================
+            // ADMIN VIEW: Sees entire studio
+            // ==========================================
+            List<AdminLessonDTO> pendingLessons = lessonRepository.findByStatus("PENDING")
+                    .stream().map(this::convertToAdminDTO).toList();
+            model.addAttribute("pendingLessons", pendingLessons);
 
-            // 1. Single Makeup Lessons (Shared)
-            List<Lesson> pendingLessons = lessonRepository.findByStatus("PENDING");
-            List<AdminLessonDTO> adminLessons = new ArrayList<>();
-
-            for (Lesson lesson : pendingLessons) {
-                User student = userRepository.findByEmail(lesson.getStudentEmail()).orElse(new User());
-                adminLessons.add(new AdminLessonDTO(
-                        lesson.getId(), student.getFirstName(), student.getLastName(),
-                        student.getEmail(), student.getPhoneNumber(),
-                        lesson.getLessonDate(), lesson.getLessonTime()
-                ));
-            }
-            model.addAttribute("pendingLessons", adminLessons);
-
-            // 2. Schedule Overrides (Shared)
             List<ScheduleOverride> overrides = overrideRepository.findAll();
             model.addAttribute("overrides", overrides);
 
-            // 3. Semester Requests (Teachers see their own, Admins see all)
-            if (isAdmin) {
-                model.addAttribute("pendingRequests", registrationRepository.findAll().stream()
-                        .filter(r -> "PENDING".equals(r.getStatus())).toList());
-            } else {
-                model.addAttribute("pendingRequests", registrationRepository.findByTeacherIdAndStatus(currentUser.getId(), "PENDING"));
-            }
+            // It's better to ask the DB to filter rather than Java Streams
+            model.addAttribute("pendingRequests", registrationRepository.findByStatus("PENDING"));
+
+        } else if (isTeacher) {
+            // ==========================================
+            // TEACHER VIEW: Sees ONLY their own studio
+            // ==========================================
+            // Uses the custom query we just wrote!
+            List<AdminLessonDTO> pendingLessons = lessonRepository.findByTeacherIdAndStatus(currentUser.getId(), "PENDING")
+                    .stream().map(this::convertToAdminDTO).toList();
+            model.addAttribute("pendingLessons", pendingLessons);
+
+            // Fetch overrides for this specific teacher PLUS global closures
+            List<ScheduleOverride> overrides = overrideRepository.findByTeacherIdOrTeacherIsNull(currentUser.getId());
+            model.addAttribute("overrides", overrides);
+
+            model.addAttribute("pendingRequests", registrationRepository.findByTeacherIdAndStatus(currentUser.getId(), "PENDING"));
 
         } else {
             // ==========================================
             // STUDENT VIEW
             // ==========================================
             List<Lesson> scheduledLessons = lessonRepository.findByStudentEmailAndStatus(currentUser.getEmail(), "SCHEDULED");
+
+            // Figure out the teacher's name for each lesson so the UI displays it
+            for (Lesson lesson : scheduledLessons) {
+                if (lesson.getSemesterRegistration() != null) {
+                    User teacher = lesson.getSemesterRegistration().getTeacher();
+                    lesson.setTeacherName(teacher.getFirstName() + " " + teacher.getLastName());
+                } else if (currentUser.getAssignedTeacher() != null) {
+                    User teacher = currentUser.getAssignedTeacher();
+                    lesson.setTeacherName(teacher.getFirstName() + " " + teacher.getLastName());
+                } else {
+                    lesson.setTeacherName("Studio Staff");
+                }
+            }
+
             model.addAttribute("scheduledLessons", scheduledLessons);
         }
 
@@ -334,40 +346,88 @@ public class WebController {
         boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
         model.addAttribute("isAdmin", isAdmin);
 
+        boolean isTeacher = "ROLE_TEACHER".equals(currentUser.getRole());
+        model.addAttribute("isTeacher", isTeacher);
+
         if (isAdmin) {
-            // ADMIN VIEW: Fetch all lessons and map them to our DTO to include names
-            List<Lesson> allLessons = lessonRepository.findAll();
+            // ==========================================
+            // ADMIN VIEW: Sees entire studio (Optimized SQL)
+            // ==========================================
+            List<AdminLessonDTO> scheduled = lessonRepository.findByStatus("SCHEDULED")
+                    .stream().map(this::convertToAdminDTO).toList();
 
-            List<AdminLessonDTO> scheduled = allLessons.stream()
-                    .filter(l -> "SCHEDULED".equals(l.getStatus()))
-                    .map(this::convertToAdminDTO)
-                    .toList();
+            List<AdminLessonDTO> pending = lessonRepository.findByStatus("PENDING")
+                    .stream().map(this::convertToAdminDTO).toList();
 
-            List<AdminLessonDTO> pending = allLessons.stream()
-                    .filter(l -> "PENDING".equals(l.getStatus()))
-                    .map(this::convertToAdminDTO)
-                    .toList();
-
-            List<AdminLessonDTO> canceled = allLessons.stream()
-                    .filter(l -> "CANCELED".equals(l.getStatus()))
-                    .map(this::convertToAdminDTO)
-                    .toList();
+            List<AdminLessonDTO> canceled = lessonRepository.findByStatus("CANCELED")
+                    .stream().map(this::convertToAdminDTO).toList();
 
             model.addAttribute("scheduledLessons", scheduled);
             model.addAttribute("pendingLessons", pending);
             model.addAttribute("canceledLessons", canceled);
+
+        } else if (isTeacher) {
+            // ==========================================
+            // TEACHER VIEW: Sees ONLY their own students
+            // ==========================================
+            // Note: You will need to add these custom finder methods to your LessonRepository!
+            List<AdminLessonDTO> scheduled = lessonRepository.findByTeacherIdAndStatus(currentUser.getId(), "SCHEDULED")
+                    .stream().map(this::convertToAdminDTO).toList();
+
+            List<AdminLessonDTO> pending = lessonRepository.findByTeacherIdAndStatus(currentUser.getId(), "PENDING")
+                    .stream().map(this::convertToAdminDTO).toList();
+
+            List<AdminLessonDTO> canceled = lessonRepository.findByTeacherIdAndStatus(currentUser.getId(), "CANCELED")
+                    .stream().map(this::convertToAdminDTO).toList();
+
+            model.addAttribute("scheduledLessons", scheduled);
+            model.addAttribute("pendingLessons", pending);
+            model.addAttribute("canceledLessons", canceled);
+
         } else {
-            // STUDENT VIEW: Fetch only their personal lessons (No DTO needed)
-            List<Lesson> myLessons = lessonRepository.findByStudentEmail(currentUser.getEmail());
-            model.addAttribute("studentLessons", myLessons);
+            // ==========================================
+            // STUDENT VIEW
+            // ==========================================
+            List<Lesson> scheduledLessons = lessonRepository.findByStudentEmailAndStatus(currentUser.getEmail(), "SCHEDULED");
+
+            // NEW: Figure out the teacher's name for each lesson
+            for (Lesson lesson : scheduledLessons) {
+                if (lesson.getSemesterRegistration() != null) {
+                    // It's a semester lesson: pull the teacher from the registration block
+                    User teacher = lesson.getSemesterRegistration().getTeacher();
+                    lesson.setTeacherName(teacher.getFirstName() + " " + teacher.getLastName());
+                } else if (currentUser.getAssignedTeacher() != null) {
+                    // It's a single makeup lesson: pull their default assigned teacher
+                    User teacher = currentUser.getAssignedTeacher();
+                    lesson.setTeacherName(teacher.getFirstName() + " " + teacher.getLastName());
+                } else {
+                    // Fallback just in case
+                    lesson.setTeacherName("Studio Staff");
+                }
+            }
+
+            model.addAttribute("scheduledLessons", scheduledLessons);
         }
 
         return "my-schedule";
     }
 
     // HELPER METHOD: Looks up the user to attach their first and last name to the lesson data
+    // Helper method to build the DTO
     private AdminLessonDTO convertToAdminDTO(Lesson lesson) {
         User student = userRepository.findByEmail(lesson.getStudentEmail()).orElse(new User());
+
+        // 1. Determine the teacher's name safely
+        String teacherName = "Studio Staff";
+        if (lesson.getSemesterRegistration() != null) {
+            User teacher = lesson.getSemesterRegistration().getTeacher();
+            teacherName = teacher.getFirstName() + " " + teacher.getLastName();
+        } else if (student.getAssignedTeacher() != null) {
+            User teacher = student.getAssignedTeacher();
+            teacherName = teacher.getFirstName() + " " + teacher.getLastName();
+        }
+
+        // 2. Return the DTO with the new 8th argument included
         return new AdminLessonDTO(
                 lesson.getId(),
                 student.getFirstName(),
@@ -375,7 +435,8 @@ public class WebController {
                 student.getEmail(),
                 student.getPhoneNumber(),
                 lesson.getLessonDate(),
-                lesson.getLessonTime()
+                lesson.getLessonTime(),
+                teacherName // NEW
         );
     }
 

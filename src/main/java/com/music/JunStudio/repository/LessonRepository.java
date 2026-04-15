@@ -3,6 +3,8 @@ package com.music.JunStudio.repository;
 
 import com.music.JunStudio.model.Lesson;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -26,4 +28,10 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
     // Add this to your existing LessonRepository
     List<Lesson> findByLessonDateAndStatusNot(LocalDate date, String status);
+
+    @Query("SELECT l FROM Lesson l " +
+            "LEFT JOIN l.semesterRegistration sr " +
+            "WHERE ((sr.teacher.id = :teacherId) OR (l.studentEmail IN (SELECT u.email FROM User u WHERE u.assignedTeacher.id = :teacherId))) " +
+            "AND l.status = :status")
+    List<Lesson> findByTeacherIdAndStatus(@Param("teacherId") Long teacherId, @Param("status") String status);
 }
