@@ -89,10 +89,17 @@
                         <td th:text="${lesson.lessonTime}"></td>
                         <td><span class="badge bg-warning text-dark">PENDING</span></td>
                         <td>
-                            <form th:action="@{/lesson/cancel}" method="POST" class="m-0">
-                                <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
-                            </form>
+                            <div class="d-flex gap-2">
+                                <form th:action="@{/lesson/approve}" method="POST" class="m-0">
+                                    <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Approve</button>
+                                </form>
+
+                                <form th:action="@{/lesson/cancel}" method="POST" class="m-0">
+                                    <input type="hidden" name="lessonId" th:value="${lesson.lessonId}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(pendingLessons)}">
@@ -155,7 +162,7 @@
                                     </span>
                         </td>
                     </tr>
-                    <tr th:if="${#lists.isEmpty(studentLessons)}">
+                    <tr th:if="${#lists.isEmpty(scheduledLessons)}">
                         <td colspan="4" class="text-center py-4 text-muted">You have no lesson history.</td>
                     </tr>
                     </tbody>

@@ -249,23 +249,31 @@ public class WebController {
         User currentUser = userRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2. Check if they are an Admin
+        // 2. NEW: Fetch all teachers for the dropdown menu
+        List<User> teachers = userRepository.findByRole("ROLE_TEACHER");
+        model.addAttribute("teachers", teachers);
+
+        // 3. Check if they are an Admin
         boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
 
-        // 3. Pass that flag to your Header.html!
+        // 4. Pass that flag to your Header.html!
         model.addAttribute("isAdmin", isAdmin);
 
         return "schedule";
     }
 
     @PostMapping("/schedule")
-    public String requestLesson(
+    public String requestLesson(@RequestParam Long teacherId,
             @RequestParam LocalDate lessonDate,
             @RequestParam LocalTime lessonTime,
             Principal principal) {
 
-        User currentUser = userRepository.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User currentUser = userRepository.findByEmail(principal.getName()).orElseThrow();
+        User selectedTeacher = userRepository.findById(teacherId).orElseThrow();
+
+        // Lock in their teacher assignment so the Dashboard and queries know who this belongs to!
+        currentUser.setAssignedTeacher(selectedTeacher);
+        userRepository.save(currentUser);
 
         // 1. Check for credits
         if (currentUser.getLessonCredits() <= 0) {
@@ -443,35 +451,24 @@ public class WebController {
 
     @GetMapping("/api/available-times")
     @ResponseBody
-    public List<String> getAvailableTimes(@RequestParam LocalDate date, Principal principal) {
+    public List<String> getAvailableTimes(@RequestParam LocalDate date,@RequestParam Long teacherId, Principal principal) {
 
-        // 1. Find the current user and their assigned teacher
-        User currentUser = userRepository.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        User teacher = currentUser.getAssignedTeacher();
+        // Find the SPECIFIC teacher they selected in the dropdown
+        User selectedTeacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
-        // Standard weekday hours
         LocalTime start = LocalTime.of(9, 0);
         LocalTime end = LocalTime.of(23, 0);
 
-        // 2. Block weekends by default
-        DayOfWeek day = date.getDayOfWeek();
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+        if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
             return Collections.emptyList();
         }
 
-        // 3. THE FIX: Check for Global or Teacher-specific overrides using a List
+        // Check overrides for THIS specific teacher
         List<ScheduleOverride> overrides = overrideRepository.findByOverrideDate(date);
-
         for (ScheduleOverride override : overrides) {
-            // Does this apply to the whole studio (null) OR this specific teacher?
-            if (override.getTeacher() == null ||
-                    (teacher != null && override.getTeacher().getId().equals(teacher.getId()))) {
-
-                // If they are closed, return the empty list immediately
+            if (override.getTeacher() == null || override.getTeacher().getId().equals(selectedTeacher.getId())) {
                 if (override.isClosed()) return Collections.emptyList();
-
-                // Otherwise, adjust the start and end times
                 start = override.getStartTime();
                 end = override.getEndTime();
             }

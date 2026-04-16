@@ -10,7 +10,7 @@
         <div class="col-md-6 col-lg-5">
             <div class="card shadow-sm">
                 <div class="card-body p-4">
-                    <h2 class="text-center mb-2">Request a Lesson</h2>
+                    <h2 class="text-center mb-2">Request Single / Make-up Lesson</h2>
                     <p class="text-center text-muted mb-4">Choose a date and time that works for you.</p>
 
                     <div th:if="${param.error != null and param.error[0] == 'pastDate'}" class="alert alert-danger text-center">
@@ -20,74 +20,88 @@
                         <strong>Time slot unavailable.</strong> Another student has already booked that exact time. Please choose a different slot.
                     </div>
 
-                    <form th:action="@{/schedule}" method="POST">
-                        <div class="mb-3">
-                            <label for="lessonDate" class="form-label">Date:</label>
-                            <input type="date" id="lessonDate" name="lessonDate" class="form-control" required>
-                        </div>
+                    <form th:action="@{/schedule}" method="POST" class="card p-4 shadow-sm">
 
-                        <div class="mb-4">
-                            <label for="lessonTime" class="form-label">Time:</label>
-                            <select id="lessonTime" name="lessonTime" class="form-select" required disabled>
-                                <option value="">-- Pick a date first --</option>
+                        <div class="mb-3">
+                            <label for="teacherId" class="form-label fw-bold">Select Teacher</label>
+                            <select id="teacherId" name="teacherId" class="form-select" required>
+                                <option value="" disabled selected>Choose a teacher...</option>
+                                <option th:each="teacher : ${teachers}"
+                                        th:value="${teacher.id}"
+                                        th:text="${teacher.firstName + ' ' + teacher.lastName}">
+                                </option>
                             </select>
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100" id="submitBtn" disabled>
-                            Submit Request
-                        </button>
+                        <div class="mb-3">
+                            <label for="lessonDate" class="form-label fw-bold">Select Date</label>
+                            <input type="date" id="lessonDate" name="lessonDate" class="form-control" required disabled>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="lessonTime" class="form-label fw-bold">Select Time</label>
+                            <select id="lessonTime" name="lessonTime" class="form-select" required disabled>
+                                <option value="" disabled selected>Select a date first...</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Submit Request</button>
                     </form>
 
                     <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const dateInput = document.getElementById('lessonDate');
-                            const timeSelect = document.getElementById('lessonTime');
-                            const submitBtn = document.getElementById('submitBtn');
+                        const teacherSelect = document.getElementById('teacherId');
+                        const dateInput = document.getElementById('lessonDate');
+                        const timeSelect = document.getElementById('lessonTime');
 
-                            // 1. Prevent past dates
-                            const today = new Date().toLocaleDateString('en-CA');
-                            dateInput.setAttribute('min', today);
+                        // 1. Unlock the Date picker only AFTER a teacher is selected
+                        teacherSelect.addEventListener('change', function() {
+                            dateInput.disabled = false;
+                            // If they change teachers, clear the current times
+                            if(dateInput.value) {
+                                fetchTimes();
+                            }
+                        });
 
-                            // 2. Listen for date selection
-                            dateInput.addEventListener('change', function() {
-                                const selectedDate = this.value;
-                                timeSelect.innerHTML = '<option value="">Loading available times...</option>';
+                        // 2. Fetch times when the date changes
+                        dateInput.addEventListener('change', fetchTimes);
+
+                        // 3. The updated fetch logic
+                        function fetchTimes() {
+                            const selectedDate = dateInput.value;
+                            const selectedTeacher = teacherSelect.value;
+
+                            if (selectedDate && selectedTeacher) {
+                                timeSelect.innerHTML = '<option value="" disabled selected>Loading available times...</option>';
                                 timeSelect.disabled = true;
-                                submitBtn.disabled = true;
 
-                                // 3. Ask the Spring Boot API for available hourly slots
-                                fetch('/api/available-times?date=' + selectedDate)
+                                // Notice we are now sending BOTH variables to the Java backend!
+                                fetch(`/api/available-times?date=${selectedDate}&teacherId=${selectedTeacher}`)
                                     .then(response => response.json())
                                     .then(times => {
-                                        timeSelect.innerHTML = '<option value="">-- Select an available time --</option>';
+                                        timeSelect.innerHTML = '<option value="" disabled selected>Choose a time...</option>';
 
                                         if (times.length === 0) {
-                                            timeSelect.innerHTML = '<option value="">No times available (Fully booked or closed)</option>';
-                                            return;
+                                            timeSelect.innerHTML = '<option value="" disabled selected>No times available</option>';
+                                        } else {
+                                            times.forEach(time => {
+                                                const option = document.createElement('option');
+                                                option.value = time;
+                                                // Format 14:00 to 2:00 PM for better UX
+                                                const [hour, minute] = time.split(':');
+                                                const ampm = hour >= 12 ? 'PM' : 'AM';
+                                                const displayHour = hour % 12 || 12;
+                                                option.textContent = `${displayHour}:${minute} ${ampm}`;
+                                                timeSelect.appendChild(option);
+                                            });
+                                            timeSelect.disabled = false;
                                         }
-
-                                        // 4. Format and populate the dropdown
-                                        times.forEach(timeStr => {
-                                            // Convert "14:00" to "2:00 PM" for display
-                                            let [hour, min] = timeStr.split(':');
-                                            let ampm = hour >= 12 ? 'PM' : 'AM';
-                                            let displayHour = hour % 12 || 12;
-
-                                            let option = document.createElement('option');
-                                            option.value = timeStr; // Send 24h format back to Java
-                                            option.text = `${displayHour}:${min} ${ampm}`;
-                                            timeSelect.appendChild(option);
-                                        });
-
-                                        timeSelect.disabled = false;
+                                    })
+                                    .catch(error => {
+                                        console.error("Error fetching times:", error);
+                                        timeSelect.innerHTML = '<option value="" disabled selected>Error loading times</option>';
                                     });
-                            });
-
-                            // Enable submit button only when a time is chosen
-                            timeSelect.addEventListener('change', function() {
-                                submitBtn.disabled = !this.value;
-                            });
-                        });
+                            }
+                        }
                     </script>
 
                     <div class="text-center mt-3">

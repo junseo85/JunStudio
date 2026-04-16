@@ -35,9 +35,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/register", "/css/**", "/js/**").permitAll()
 
-                        // NEW: Lock down the admin actions!
-                        // Note: Spring automatically adds "ROLE_" to this, so it looks for "ROLE_ADMIN" in your database
-                        .requestMatchers("/lesson/approve", "/lesson/cancel", "/admin/override").hasRole("ADMIN")
+                        // NEW: Allow BOTH Admins and Teachers to manage schedule actions
+                        .requestMatchers(
+                                "/lesson/approve",
+                                "/lesson/cancel",
+                                "/admin/override",
+                                "/semester/assign", // Locked down!
+                                "/semester/reject"  // Locked down!
+                        ).hasAnyRole("ADMIN", "TEACHER")
 
                         .anyRequest().authenticated()
                 )
