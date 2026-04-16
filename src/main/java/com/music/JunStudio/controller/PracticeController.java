@@ -41,24 +41,29 @@ public class PracticeController {
     @GetMapping
     public String showPracticeGallery(
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,  // Default to Page 1 (Index 0)
-            @RequestParam(defaultValue = "2") int size, // Show 12 videos per page ----I manually set as 2 for testing purpose
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "2") int size,
             Model model,
             Principal principal) {
 
         User currentUser = userRepository.findByEmail(principal.getName()).orElseThrow();
         boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
+        boolean isTeacher = "ROLE_TEACHER".equals(currentUser.getRole()); // NEW
 
-        // Build the pagination request (sorted newest first)
         Pageable pageable = PageRequest.of(page, size, Sort.by("uploadedAt").descending());
-
         Page<PracticeVideo> videoPage;
 
         if (isAdmin) {
             if (search != null && !search.trim().isEmpty()) {
                 videoPage = videoRepository.findByTitleContainingIgnoreCaseOrUploaderNameContainingIgnoreCase(search, search, pageable);
             } else {
-                videoPage = videoRepository.findAll(pageable); // Built-in method
+                videoPage = videoRepository.findAll(pageable);
+            }
+        } else if (isTeacher) { // NEW TEACHER ROUTING
+            if (search != null && !search.trim().isEmpty()) {
+                videoPage = videoRepository.searchForTeacher(search, currentUser.getEmail(), currentUser.getId(), pageable);
+            } else {
+                videoPage = videoRepository.findAllForTeacher(currentUser.getEmail(), currentUser.getId(), pageable);
             }
         } else {
             if (search != null && !search.trim().isEmpty()) {
@@ -68,12 +73,10 @@ public class PracticeController {
             }
         }
 
-        // Pass the entire Page object to Thymeleaf, along with the search term
         model.addAttribute("videoPage", videoPage);
         model.addAttribute("search", search);
-
-        //THE FIX: Tell the HTML navigation bar this is an Admin
         model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isTeacher", isTeacher); // NEW
 
         return "practice-gallery";
     }
@@ -83,10 +86,25 @@ public class PracticeController {
     public String viewVideo(@PathVariable Long id, Model model, Principal principal) {
         PracticeVideo video = videoRepository.findById(id).orElseThrow();
         User currentUser = userRepository.findByEmail(principal.getName()).orElseThrow();
-        boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
 
-        // NEW: Hard security check to prevent students from guessing URLs of private videos
-        if (video.isPrivate() && !isAdmin && !video.getUploaderEmail().equals(currentUser.getEmail())) {
+        boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole());
+        boolean isTeacher = "ROLE_TEACHER".equals(currentUser.getRole());
+        boolean isAssignedTeacher = false;
+
+        // NEW: If they are a teacher, verify they are THIS student's assigned teacher
+        if (isTeacher) {
+            User uploader = userRepository.findByEmail(video.getUploaderEmail()).orElse(null);
+            if (uploader != null && uploader.getAssignedTeacher() != null) {
+                isAssignedTeacher = uploader.getAssignedTeacher().getId().equals(currentUser.getId());
+            }
+        }
+
+        // UPDATED: Allow access if they are the owner, an Admin, OR the assigned teacher
+        if (video.isPrivate()
+                && !isAdmin
+                && !isAssignedTeacher
+                && !video.getUploaderEmail().equals(currentUser.getEmail())) {
+
             return "redirect:/practice?error=unauthorized";
         }
 
@@ -96,6 +114,7 @@ public class PracticeController {
         model.addAttribute("comments", comments);
         model.addAttribute("currentUserEmail", currentUser.getEmail());
         model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isTeacher", isTeacher);
 
         return "practice-detail";
     }
