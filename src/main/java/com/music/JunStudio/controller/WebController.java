@@ -616,6 +616,15 @@ public class WebController {
     public String assignSemesterSlot( @RequestParam Long registrationId, @RequestParam DayOfWeek assignedDay, @RequestParam LocalTime assignedTime){
         SemesterRegistration registration = registrationRepository.findById(registrationId).orElseThrow(() -> new RuntimeException("Registration not found"));
 
+        //need to make /semester/assign endpoint IDEMPOTENT(meaning no matter how many times a user double-clicks the submit button or refreshes the page, the action only happens once)
+        // ==========================================
+        // THE GUARD CLAUSE (Double-Booking Prevention)
+        // ==========================================
+        if ("ASSIGNED".equals(registration.getStatus())) {
+            // They already generated this semester! Send them back with an error flag.
+            return "redirect:/dashboard?error=alreadyAssigned";
+        }
+
         //update the registration with the permanent schedule
         registration.setAssignedDay(assignedDay);
         registration.setAssignedTime(assignedTime);
@@ -697,7 +706,7 @@ public class WebController {
         // D. Save all 16 lessons to the database in one highly efficient query
         lessonRepository.saveAll(semesterLessons);
 
-        return "redirect://dashboard?slotAssigned=true";
+        return "redirect:/dashboard?slotAssigned=true";
     }
 
 
