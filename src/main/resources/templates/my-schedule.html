@@ -144,7 +144,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="lesson : ${studentLessons}">
+                    <tr th:each="lesson : ${scheduledLessons}">
                         <td th:text="${lesson.lessonDate}">2026-05-01</td>
                         <td th:text="${lesson.lessonTime}">14:00</td>
                         <td th:text="${lesson.teacherName} ?: 'Pending'">Teacher Name</td>

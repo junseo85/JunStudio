@@ -283,6 +283,7 @@
           <tr>
             <th>Date</th>
             <th>Time</th>
+            <th>Teacher</th>
             <th>Status</th>
           </tr>
           </thead>
@@ -290,6 +291,7 @@
           <tr th:each="lesson : ${scheduledLessons}">
             <td th:text="${lesson.lessonDate}">2026-05-01</td>
             <td th:text="${lesson.lessonTime}">14:00</td>
+            <td th:text="${lesson.teacherName}">Teacher</td>
             <td><span class="badge bg-success">Confirmed</span></td>
           </tr>
           <tr th:if="${#lists.isEmpty(scheduledLessons)}">

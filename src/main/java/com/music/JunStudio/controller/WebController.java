@@ -165,7 +165,7 @@ public class WebController {
             // ==========================================
             List<Lesson> scheduledLessons = lessonRepository.findByStudentEmailAndStatus(currentUser.getEmail(), "SCHEDULED");
 
-            // Figure out the teacher's name for each lesson so the UI displays it
+            // NEW: Figure out the teacher's name for the dashboard view
             for (Lesson lesson : scheduledLessons) {
                 if (lesson.getSemesterRegistration() != null) {
                     User teacher = lesson.getSemesterRegistration().getTeacher();
