@@ -50,7 +50,7 @@
 
             <hr>
 
-            <form th:action="@{/semester/assign}" method="POST">
+            <form th:id="'assignForm-' + ${req.id}" th:action="@{/semester/assign}" method="POST">
               <input type="hidden" name="registrationId" th:value="${req.id}" />
 
               <div class="row">
@@ -72,8 +72,26 @@
                   <input type="time" name="assignedTime" class="form-control form-control-sm" required>
                 </div>
               </div>
-              <button type="submit" class="btn btn-sm btn-primary w-100">Confirm & Assign Slot</button>
             </form>
+            <div class="row g-2 mt-3">
+
+              <div class="col-6">
+                <button type="submit" th:form="'assignForm-' + ${req.id}" class="btn btn-sm btn-primary w-100 h-100">
+                  Confirm & Assign Slot
+                </button>
+              </div>
+
+              <div class="col-6">
+                <form th:action="@{/semester/reject}" method="POST" class="m-0 h-100">
+                  <input type="hidden" name="registrationId" th:value="${req.id}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger w-100 h-100">
+                    Reject & Refund
+                  </button>
+                </form>
+              </div>
+
+            </div>
+
           </div>
         </div>
       </div>

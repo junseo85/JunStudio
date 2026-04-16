@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -49,6 +50,7 @@ public class SemesterRegistrationController {
 
     // 2. Handle the Form Submission
     @PostMapping
+    @Transactional//Ensures both database saves succeed , or neither do
     public String submitRegistration(
             @RequestParam Long teacherId,
             @RequestParam String term,
@@ -60,6 +62,13 @@ public class SemesterRegistrationController {
 
         User student = userRepository.findByEmail(principal.getName()).orElseThrow();
         User teacher = userRepository.findById(teacherId).orElseThrow();
+
+        // ==========================================
+        // 1. THE GUARD CLAUSE (Credit Check)
+        // ==========================================
+        if (student.getLessonCredits() < 16) {
+            return "redirect:/dashboard?nocredit=true";
+        }
 
         // Build the registration request
         SemesterRegistration registration = new SemesterRegistration();
@@ -73,6 +82,12 @@ public class SemesterRegistrationController {
         registration.setStatus("PENDING");
 
         registrationRepository.save(registration);
+
+        // ==========================================
+        // 2. THE CHARGE (Deduct Credits)
+        // ==========================================
+        student.setLessonCredits(student.getLessonCredits() - 16);
+        userRepository.save(student);
 
         // Redirect back to dashboard with a success flag
         return "redirect:/dashboard?semesterRequested=true";

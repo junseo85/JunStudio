@@ -12,6 +12,7 @@ import com.music.JunStudio.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -709,5 +710,42 @@ public class WebController {
         return "redirect:/dashboard?slotAssigned=true";
     }
 
+    // NEW ENDPOINT: Handle the Teacher rejecting a semester request
+    @PostMapping("/semester/reject")
+    @Transactional // Ensures the status change and the refund happen together
+    public String rejectSemesterRegistration(@RequestParam Long registrationId) {
+
+        SemesterRegistration registration = registrationRepository.findById(registrationId)
+                .orElseThrow(() -> new RuntimeException("Registration not found"));
+
+        // ==========================================
+        // THE GUARD CLAUSE (Double-Refund Prevention)
+        // ==========================================
+        if (!"PENDING".equals(registration.getStatus())) {
+            // If it's already assigned or already canceled, stop immediately.
+            return "redirect:/dashboard?error=invalidStatus";
+        }
+
+        // 1. Mark the request as canceled/rejected
+        registration.setStatus("CANCELED");
+        registrationRepository.save(registration);
+
+        // 2. Refund the 16 credits back to the student
+        User student = registration.getStudent();
+        student.setLessonCredits(student.getLessonCredits() + 16);
+        userRepository.save(student);
+
+        // 3. Send the cancellation email
+        String subject = "Jun Studio: Semester Request Update";
+        String body = "Hello " + student.getFirstName() + ",\n\n" +
+                "Unfortunately, your instructor is unable to accommodate your requested semester schedule at this time.\n\n" +
+                "Your 16 lesson credits have been fully refunded to your account. Please log in to view availability and request a new time slot.\n\n" +
+                "- Jun Studio";
+
+        emailService.sendSimpleEmail(student.getEmail(), subject, body);
+
+        // 4. Redirect back to the dashboard with a success flag
+        return "redirect:/dashboard?rejected=true";
+    }
 
 }

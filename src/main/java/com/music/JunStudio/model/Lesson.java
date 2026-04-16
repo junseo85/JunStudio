@@ -9,7 +9,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "lessons")
+@Table(name = "lessons", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_student_lesson_datetime",
+                columnNames = {"student_email", "lesson_date", "lesson_time"}
+        )
+})//defense against race condition- if two requests hit your server in the exact same millisecond, both could theoretically read the database, see that the slot is open, and insert a row simultaneouslyl.
 @Data
 @NoArgsConstructor
 public class Lesson {
