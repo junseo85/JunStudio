@@ -3,9 +3,9 @@ name: Spring Boot CI/CD Pipeline
 # This tells GitHub to run this script every time you push to the 'main' branch
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   build:
