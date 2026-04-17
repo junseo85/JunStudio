@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # 1. The MySQL Database Container
+  db:
+    image: mysql:8.0
+    container_name: junstudio-mysql
+    environment:
+      MYSQL_DATABASE: junstudio_db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 2. Your Spring Boot Application Container
+  app:
+    build: .
+    container_name: junstudio-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      # These environment variables dynamically override your application.properties!
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/junstudio_db?useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+volumes:
+  # This ensures your database isn't wiped out every time you stop the container
+  mysql_data:
