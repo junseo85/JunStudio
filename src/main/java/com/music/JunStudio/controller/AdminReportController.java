@@ -3,6 +3,7 @@ package com.music.JunStudio.controller;
 import com.music.JunStudio.model.ActivityDTO;
 import com.music.JunStudio.model.Lesson;
 import com.music.JunStudio.model.PracticeVideo;
+import com.music.JunStudio.model.User;
 import com.music.JunStudio.repository.LessonRepository;
 import com.music.JunStudio.repository.PracticeVideoRepository;
 import com.music.JunStudio.repository.UserRepository;
@@ -66,6 +67,14 @@ public class AdminReportController {
                         user -> user.getFirstName() + " " + user.getLastName()
                 ));
 
+        // NEW: Create a lookup map to instantly find a student's assigned teacher's email
+        Map<String, String> studentTeacherLookup = userRepository.findAll().stream()
+                .filter(u -> u.getAssignedTeacher() != null)
+                .collect(Collectors.toMap(
+                        User::getEmail,
+                        u -> u.getAssignedTeacher().getEmail()
+                ));
+
         // ==========================================
         // UPDATED: DRILL-DOWN DATA FOR THE CHART
         // ==========================================
@@ -76,7 +85,21 @@ public class AdminReportController {
         Map<String, Long> scheduledByUser = allLessons.stream()
                 .filter(l -> "SCHEDULED".equals(l.getStatus()))
                 .collect(Collectors.groupingBy(
-                        l -> nameLookup.getOrDefault(l.getStudentEmail(), l.getStudentEmail()),
+                        lesson -> {
+                            String teacherEmail = "Studio Staff"; // Default fallback
+
+                            // 1. Try to find the teacher via the Semester Registration
+                            if (lesson.getSemesterRegistration() != null) {
+                                teacherEmail = lesson.getSemesterRegistration().getTeacher().getEmail();
+                            }
+                            // 2. Try to find the teacher via the Student's profile using our map!
+                            else if (studentTeacherLookup.containsKey(lesson.getStudentEmail())) {
+                                teacherEmail = studentTeacherLookup.get(lesson.getStudentEmail());
+                            }
+
+                            // 3. Translate the teacher's email into their First & Last Name
+                            return nameLookup.getOrDefault(teacherEmail, teacherEmail);
+                        },
                         Collectors.counting()
                 ));
 
