@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: junstudio-mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+
+          env:
+            - name: MYSQL_DATABASE
+              value: "junstudio_db"
+            - name: MYSQL_ROOT_PASSWORD
+              value: "root" # In the future, we'll move this to K8s Secrets!
+          ports:
+            - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db # This matches the name in your Spring Boot URL!
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mysql
+  clusterIP: None # This keeps the database strictly internal and hidden from the public internet
