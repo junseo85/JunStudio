@@ -1,58 +1,69 @@
-# JunStudio 🎻 : Multi-Tenant Studio Management SaaS
-
-> **The Problem:** Multi-teacher music academies often rely on fragmented, manual tools for scheduling, billing, and time-off management.
-> **The Solution:** A centralized, multi-tenant Spring Boot application that automates 16-week semester generation, prevents calendar collisions across concurrent instructors, and handles credit-based scheduling.
-
-Built with **Java and Spring Boot**, this platform handles the complete studio lifecycle: from student registration and payment processing, to algorithmic scheduling, automated email/PDF receipts, and live data reporting.
-
-## 🚀 Key Features
-* **Role-Based Access Control (RBAC):** Distinct UI dashboards and data access tiers for Admins, Teachers, and Students.
-* **Smart Semester Scheduling Engine:** Students register for preferred days; upon approval, the backend algorithmically generates a 16-week calendar, intelligently skipping global holidays and teacher-specific blocked dates.
-* **Dynamic Availability System:** Real-time schedule validation that prevents double-booking and respects both studio-wide closures and individual teacher time-off overrides.
-* **Credit-Based Booking:** Integrated flow where students utilize pre-purchased lesson credits to book sessions, triggering automated PDF receipts and email confirmations.
-* **Live Analytics Dashboard:** Interactive data visualization (via Chart.js) allowing admins to drill down into studio activity, pending requests, and cancellation rates.
-
-## 💻 Tech Stack
-* **Backend:** Java 17+, Spring Boot (Web, Data JPA, Security), Hibernate, MySQL
-* **Frontend:** HTML5, Bootstrap 5, Thymeleaf, Chart.js
-* **DevOps & Tools:** Docker, GitHub Actions (CI/CD), iText (PDF Generation), JavaMailSender
 
 ---
 
-## 🧠 Architectural Decisions & Optimizations
+# 🎼 JunStudio: Music Lesson Management Platform
+> **Strategic Cost-Optimized Deployment Edition (EC2 Branch)**
 
-### 1. Query Optimization & Memory Management
-Initially, dashboard reporting relied on pulling full database tables into application memory (`.findAll()`) and filtering via Java Streams. Recognizing the severe OutOfMemory (OOM) risk as the dataset scales, the data access layer was refactored. The application now utilizes **custom JPQL (Java Persistence Query Language) queries** to offload complex multi-tenant filtering (e.g., matching sub-queries for assigned teachers) directly to the MySQL database, significantly reducing server RAM utilization.
-
-### 2. Algorithmic "Smart Loop" Scheduling
-Generating a 16-week semester isn't as simple as adding 7 days 16 times. The `WebController` utilizes `java.time.temporal.TemporalAdjusters` and a custom `while` loop to validate every future date against a `ScheduleOverride` table. If a generated date lands on a studio holiday or a teacher's scheduled time off, the algorithm automatically skips that week and extends the semester to ensure the student receives their exact allotment of lessons.
-
-### 3. Multi-Tenant Data Isolation
-Transitioned the database from a single-instructor model to a scalable multi-tenant architecture. The `User` model establishes an `assignedTeacher` relationship, and the `ScheduleOverride` model differentiates between global studio closures (`teacher_id = null`) and individual instructor sick days. This prevents one instructor's time off from inadvertently locking the entire studio calendar.
-
-### 4. Seamless Server-Side to Client-Side Data Handoff
-Leveraged Thymeleaf's natural templates to securely pass grouped database metrics directly into JavaScript JSON objects. This allows the Chart.js dashboard to dynamically swap between Donut and Bar charts based on user drill-down selections without requiring additional REST API calls.
+**Live Platform:** [https://cellojun.com](https://cellojun.com)  
+**Architecture:** Multi-Container Docker on AWS EC2 + AWS RDS
 
 ---
 
-## ☁️ DevOps & Continuous Integration
+## 📖 Project Overview
+**JunStudio** is a full-stack studio management solution built to eliminate administrative friction for music educators. It features a "three-click" lesson booking system, an automated admin dashboard for revenue and scheduling analytics, and secure role-based access control.
 
-* **Docker Containerization:** The application is containerized using a multi-stage `Dockerfile`. It builds the artifact using Maven and packages the runtime into an `eclipse-temurin:17-jre-alpine` image, ensuring a secure, ultra-lightweight production footprint.
-* **CI/CD Pipeline:** Configured a **GitHub Actions** workflow that triggers on every push/PR to the `main` branch. A cloud runner provisions a clean Ubuntu JDK 17 environment, resolves dependencies, and automatically executes the test suite to prevent regressions from reaching production.
+### **The "Why" Behind This Branch**
+While the `master` branch utilizes a high-availability **AWS EKS (Kubernetes)** cluster, this branch represents a complete migration to a standalone **AWS EC2** architecture. By transitioning from EKS/Fargate to a containerized EC2 setup, I successfully reduced the monthly infrastructure "burn rate" by over **95%** while maintaining production performance and security.
 
-## 🛠️ Local Setup & Installation
+---
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/junseo85/JunStudio.git](https://github.com/junseo85/JunStudio.git)
-   
-2. **Configure Database:**
-Create an application-dev.properties file in src/main/resources and add your local MySQL credentials.
-3.  **Build the project:**
+## 🛠 Tech Stack
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React.js, Tailwind CSS, Framer Motion (UI/UX) |
+| **Backend** | Java 17, Spring Boot, Spring Security (JWT) |
+| **Database** | AWS RDS (MySQL 8.0) |
+| **DevOps** | Docker, Docker Compose, Linux (Amazon Linux 2023) |
+| **Networking** | Cloudflare (Proxy, SSL/TLS), Reverse Proxy Orchestration |
+
+---
+
+## 🚀 Key Engineering Challenges & Solutions
+
+### **1. Infrastructure Migration (EKS → EC2)**
+* **Problem:** The original EKS Control Plane cost ~$72/month, making it unsustainable for a solo project.
+* **Solution:** Migrated the orchestration to a single `t3.micro` EC2 instance using **Docker Compose**. I manually configured the networking layer to bridge the gap between Docker's internal bridge network and the AWS VPC.
+
+### **2. JVM Performance Tuning on Limited Hardware**
+* **Problem:** Spring Boot and MySQL containers combined exceed the 1GB RAM limit of a `t3.micro` instance, leading to "Out of Memory" (OOM) crashes.
+* **Solution:** Implemented **2GB of Swap Space (Virtual RAM)** on the Linux host. This allowed the JVM to handle memory-intensive startup tasks without requiring an expensive instance upgrade.
+
+### **3. Production Networking & SSL**
+* **Problem:** AWS Load Balancers (ALB) add significant monthly costs.
+* **Solution:** Leveraged **Cloudflare’s Flexible SSL** and configured a manual reverse proxy within Docker. By mapping internal container port `8080` to host port `80`, I achieved a professional `https://` domain experience with $0 overhead.
+
+---
+
+## 📊 Features
+* **Admin Analytics:** High-efficiency data mapping in the Java backend converts raw relational data into drill-down charts for lesson reporting.
+* **Booking System:** A user-centric React interface designed for students to book lessons in under 3 clicks.
+* **Secure Authentication:** JWT-based stateless authentication with secure role-based navigation.
+
+---
+
+## 📦 Local & Deployment Setup
+
+### **Prerequisites**
+* Docker & Docker Compose
+* Java 17 (for local dev)
+
+### **Deployment Command**
 ```bash
-mvn clean install
+# Clone the optimized branch
+git clone -b EC2 https://github.com/junseo85/JunStudio.git
+cd JunStudio
+
+# Start the environment
+docker-compose up -d --build
 ```
-4.  **Run the application:**
-```bash
-mvn spring-boot:run
-```
+
