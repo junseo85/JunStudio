@@ -60,6 +60,11 @@ public class WebController {
         return "index";
     }
 
+    @GetMapping("/about")
+    public String aboutPage() {
+        return "about";
+    }
+
     // 1. Show the HTML page when they go to localhost:8080/register
     @GetMapping("/register")
     public String showRegistrationForm() {
