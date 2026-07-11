@@ -163,20 +163,21 @@ public class AuditionController {
                 video.setVideoUrl(embedUrl);
 
             } else if ("LOCAL_FILE".equals(videoType) && file != null && !file.isEmpty()) {
-                Path uploadPath = Paths.get("uploads/audition-videos/");
-                if (!Files.exists(uploadPath)) {
-                    Files.createDirectories(uploadPath);
-                }
-                // Sanitize filename: extract only the extension and strip unsafe characters
-                String originalFilename = Paths.get(file.getOriginalFilename()).getFileName().toString();
-                int dotIndex = originalFilename.lastIndexOf(".");
-                String extension = (dotIndex >= 0) ? originalFilename.substring(dotIndex).replaceAll("[^a-zA-Z0-9.]", "") : "";
-                String newFilename = UUID.randomUUID().toString() + extension;
-                Path filePath = uploadPath.resolve(newFilename).normalize();
-                if (!filePath.startsWith(uploadPath.toAbsolutePath())) {
-                    return "redirect:/audition?error=uploadFailed";
-                }
-                Files.copy(file.getInputStream(), filePath);
+Path uploadPath = Paths.get("uploads/audition-videos/").toAbsolutePath().normalize();
+if (!Files.exists(uploadPath)) {
+    Files.createDirectories(uploadPath);
+}
+// Sanitize filename: extract only the extension and strip unsafe characters
+String originalFilename = file.getOriginalFilename();
+originalFilename = (originalFilename == null) ? "" : Paths.get(originalFilename).getFileName().toString();
+int dotIndex = originalFilename.lastIndexOf(".");
+String extension = (dotIndex >= 0) ? originalFilename.substring(dotIndex).replaceAll("[^a-zA-Z0-9.]", "") : "";
+String newFilename = UUID.randomUUID().toString() + extension;
+Path filePath = uploadPath.resolve(newFilename).normalize();
+if (!filePath.startsWith(uploadPath)) {
+    return "redirect:/audition?error=uploadFailed";
+}
+Files.copy(file.getInputStream(), filePath);
                 video.setVideoUrl("/uploads/audition-videos/" + newFilename);
             }
 
