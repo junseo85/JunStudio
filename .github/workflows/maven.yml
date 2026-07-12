@@ -3,14 +3,22 @@ name: Spring Boot CI/CD Pipeline
 # This tells GitHub to run this script every time you push to the 'main' branch
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   build:
     # This spins up a temporary Linux server in the cloud
     runs-on: ubuntu-latest
+    env:
+      DB_URL: jdbc:mysql://localhost:3306/testdb
+      DB_USER: root
+      DB_PASS: root
+      DB_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      STRIPE_KEY: sk_test_dummy_key
+      MAIL_USER: test@gmail.com
+      MAIL_PASS: dummy_mail_pass
 
     steps:
       # Step 1: Download your code onto the server

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>About - Jun Studio</title>
+</head>
+<body>
+
+<main>
+    <!-- Hero / Profile Banner -->
+    <div class="about-hero position-relative"
+         style="height: 420px; background-image: url('/images/profile.jpg'); background-size: cover; background-position: center top;">
+        <div class="position-absolute top-0 start-0 w-100 h-100"
+             style="background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.65) 100%);"></div>
+        <div class="position-absolute bottom-0 start-0 p-5 text-white" style="z-index: 1;">
+            <h1 class="display-4 fw-bold mb-1">Jun Studio</h1>
+            <p class="lead mb-0">Music Instruction &amp; Arts Education</p>
+        </div>
+    </div>
+
+    <!-- Bio Section -->
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <h2 class="fw-bold mb-4">About the Studio</h2>
+
+                <p class="lead text-muted mb-4">
+                    Welcome to Jun Studio — a place where music is more than notes on a page.
+                    We believe every student has the potential to flourish, and our mission is to
+                    cultivate that potential through dedicated, individualized instruction.
+                </p>
+
+                <h4 class="fw-semibold mt-5 mb-3">Our Philosophy</h4>
+                <p>
+                    Music education is most effective when it meets the student where they are.
+                    Whether you are picking up an instrument for the first time or preparing for
+                    a competitive audition, our curriculum adapts to your pace, your goals, and
+                    your unique musical voice. We combine classical technique with a modern,
+                    encouraging environment so that learning remains joyful at every stage.
+                </p>
+
+                <h4 class="fw-semibold mt-5 mb-3">What We Offer</h4>
+                <ul class="list-unstyled">
+                    <li class="mb-2">✔ &nbsp;Private one-on-one lessons for all skill levels</li>
+                    <li class="mb-2">✔ &nbsp;Flexible scheduling: single sessions &amp; full semester programs</li>
+                    <li class="mb-2">✔ &nbsp;Practice video review with teacher feedback</li>
+                    <li class="mb-2">✔ &nbsp;Audition preparation and performance coaching</li>
+                    <li class="mb-2">✔ &nbsp;Online and in-studio lesson options</li>
+                </ul>
+
+                <h4 class="fw-semibold mt-5 mb-3">Meet the Instructor</h4>
+                <p>
+                    [Instructor bio — share your background, performance experience, teaching
+                    credentials, and personal musical journey here. This placeholder is ready
+                    for you to personalise with your own story.]
+                </p>
+
+                <div class="mt-5 text-center">
+                    <a href="/register" class="btn btn-primary btn-lg px-5 me-3">Join the Studio</a>
+                    <a href="/schedule" class="btn btn-outline-secondary btn-lg px-5">Book a Lesson</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>
