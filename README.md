@@ -89,9 +89,9 @@ To review the platform’s functionality, use the credentials below.
 
 ### User Roles
 
-**Admin Account**
-- **Email:** `admin@junstudio.com`
-- **Password:** `admin123`
+**Test Teacher Account**
+- **Email:** `test@junstudio.com`
+- **Password:** `test123`
 
 **Student Account**
 - Create a new account via the Sign-Up page.
