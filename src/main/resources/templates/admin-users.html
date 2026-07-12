@@ -54,11 +54,6 @@
                                 Edit
                             </button>
 
-                            <button class="btn btn-sm btn-outline-warning"
-                                    th:onclick="openResetPasswordModal([[${user.id}]], [[${user.firstName + ' ' + user.lastName}]])">
-                                Password Reset
-                            </button>
-
                             <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="POST" onsubmit="return confirm('Delete this user?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                             </form>
@@ -208,7 +203,7 @@
             editModal.show();
         }
 
-<<<<<<< HEAD
+
         // Client-side password match validation for the edit form
         (function () {
             'use strict';
@@ -241,25 +236,8 @@
                 editForm.classList.add('was-validated');
             }, false);
         })();
-=======
-        function openResetPasswordModal(id, fullName) {
-            document.getElementById('resetPasswordForm').action = '/admin/users/' + id + '/reset-password';
-            document.getElementById('resetPasswordModalLabel').textContent = 'Reset Password for ' + fullName;
-            document.getElementById('resetNewPassword').value = '';
-            document.getElementById('resetConfirmPassword').value = '';
-            document.getElementById('resetConfirmBtn').disabled = true;
 
-            var modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-            modal.show();
-        }
 
-        function checkResetPasswords() {
-            var newPw = document.getElementById('resetNewPassword').value;
-            var confirmPw = document.getElementById('resetConfirmPassword').value;
-            var btn = document.getElementById('resetConfirmBtn');
-            btn.disabled = !(newPw.length >= 6 && confirmPw.length >= 6 && newPw === confirmPw);
-        }
->>>>>>> origin/master
     </script>
 
     <!-- Reset Password Modal -->
