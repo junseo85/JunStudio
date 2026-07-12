@@ -19,19 +19,33 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // Check if our test user already exists
-        if (userRepository.findByEmail("admin@music.com").isEmpty()) {
+        if (userRepository.findByEmail("admin@junstudio.com").isEmpty()) {
 
             User admin = new User();
-            admin.setEmail("admin@music.com");
+            admin.setEmail("admin@junstudio.com");
 
             // Let Spring handle the messy hashing!
-            admin.setPasswordHash(passwordEncoder.encode("password123"));
+            admin.setPasswordHash(passwordEncoder.encode("admin123"));
 
             admin.setRole("ROLE_ADMIN");
             admin.setLessonCredits(999);
 
             userRepository.save(admin);
             System.out.println("✅ Admin user seeded successfully!");
+        }
+        if (userRepository.findByEmail("test@junstudio.com").isEmpty()) {
+
+            User admin = new User();
+            admin.setEmail("test@junstudio.com");
+
+            // Let Spring handle the messy hashing!
+            admin.setPasswordHash(passwordEncoder.encode("test123"));
+
+            admin.setRole("ROLE_TEACHER");
+            admin.setLessonCredits(999);
+
+            userRepository.save(admin);
+            System.out.println("✅ Test user seeded successfully!");
         }
     }
 }
