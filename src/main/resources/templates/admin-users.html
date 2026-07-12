@@ -54,6 +54,11 @@
                                 Edit
                             </button>
 
+                            <button class="btn btn-sm btn-outline-warning"
+                                    th:onclick="openResetPasswordModal([[${user.id}]], [[${user.firstName + ' ' + user.lastName}]])">
+                                Password Reset
+                            </button>
+
                             <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="POST" onsubmit="return confirm('Delete this user?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                             </form>
@@ -203,6 +208,7 @@
             editModal.show();
         }
 
+<<<<<<< HEAD
         // Client-side password match validation for the edit form
         (function () {
             'use strict';
@@ -235,7 +241,57 @@
                 editForm.classList.add('was-validated');
             }, false);
         })();
+=======
+        function openResetPasswordModal(id, fullName) {
+            document.getElementById('resetPasswordForm').action = '/admin/users/' + id + '/reset-password';
+            document.getElementById('resetPasswordModalLabel').textContent = 'Reset Password for ' + fullName;
+            document.getElementById('resetNewPassword').value = '';
+            document.getElementById('resetConfirmPassword').value = '';
+            document.getElementById('resetConfirmBtn').disabled = true;
+
+            var modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+            modal.show();
+        }
+
+        function checkResetPasswords() {
+            var newPw = document.getElementById('resetNewPassword').value;
+            var confirmPw = document.getElementById('resetConfirmPassword').value;
+            var btn = document.getElementById('resetConfirmBtn');
+            btn.disabled = !(newPw.length >= 6 && confirmPw.length >= 6 && newPw === confirmPw);
+        }
+>>>>>>> origin/master
     </script>
+
+    <!-- Reset Password Modal -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="resetPasswordModalLabel">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="resetPasswordForm" method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <div class="mb-3">
+                            <label for="resetNewPassword" class="form-label">New Password</label>
+                            <input type="password" id="resetNewPassword" name="newPassword" class="form-control"
+                                   required minlength="6" oninput="checkResetPasswords()">
+                        </div>
+                        <div class="mb-3">
+                            <label for="resetConfirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" id="resetConfirmPassword" name="confirmPassword" class="form-control"
+                                   required minlength="6" oninput="checkResetPasswords()">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="resetConfirmBtn" class="btn btn-warning" disabled>Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
 </main>
 </body>

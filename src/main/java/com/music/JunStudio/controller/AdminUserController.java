@@ -82,4 +82,30 @@ public class AdminUserController {
         userRepository.deleteById(id);
         return "redirect:/admin/users?success=User deleted successfully";
     }
+
+    // 5. Admin-initiated password reset
+    @PostMapping("/{id}/reset-password")
+    public String adminResetPassword(@PathVariable Long id,
+                                     @RequestParam("newPassword") String newPassword,
+                                     @RequestParam("confirmPassword") String confirmPassword,
+                                     Principal principal) {
+        User admin = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!"ROLE_ADMIN".equals(admin.getRole())) {
+            return "redirect:/dashboard?error=unauthorized";
+        }
+
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
+            return "redirect:/admin/users?error=Password must be at least 6 characters";
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            return "redirect:/admin/users?error=Passwords do not match";
+        }
+
+        User target = userRepository.findById(id).orElseThrow();
+        target.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(target);
+
+        return "redirect:/admin/users?success=Password reset successfully";
+    }
 }
