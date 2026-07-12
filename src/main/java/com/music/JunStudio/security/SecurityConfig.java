@@ -33,7 +33,8 @@ public class SecurityConfig {
     public org.springframework.security.web.SecurityFilterChain filterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**",
+                                "/password-reset/request", "/password-reset/confirm").permitAll()
 
                         // NEW: Allow BOTH Admins and Teachers to manage schedule actions
                         .requestMatchers(
