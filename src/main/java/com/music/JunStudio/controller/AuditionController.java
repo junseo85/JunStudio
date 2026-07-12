@@ -160,6 +160,9 @@ public class AuditionController {
                         // Keep original URL if parsing fails
                     }
                 }
+                if (embedUrl == null || !embedUrl.startsWith("https://www.youtube.com/embed/")) {
+                    return "redirect:/audition?error=invalidYoutubeUrl";
+                }
                 video.setVideoUrl(embedUrl);
 
             } else if ("LOCAL_FILE".equals(videoType) && file != null && !file.isEmpty()) {
