@@ -49,7 +49,10 @@ public class AdminUserController {
 
     // 3. Edit an existing user
     @PostMapping("/{id}/edit")
-    public String editUser(@PathVariable Long id, @ModelAttribute User updatedUser) {
+    public String editUser(@PathVariable Long id,
+                           @ModelAttribute User updatedUser,
+                           @RequestParam(required = false) String newPassword,
+                           @RequestParam(required = false) String confirmPassword) {
         User existingUser = userRepository.findById(id).orElseThrow();
 
         existingUser.setFirstName(updatedUser.getFirstName());
@@ -58,6 +61,16 @@ public class AdminUserController {
         existingUser.setPhoneNumber(updatedUser.getPhoneNumber());
         existingUser.setRole(updatedUser.getRole());
         existingUser.setLessonCredits(updatedUser.getLessonCredits());
+
+        if (newPassword != null && !newPassword.isBlank()) {
+            if (newPassword.length() < 6) {
+                return "redirect:/admin/users?error=Password must be at least 6 characters";
+            }
+            if (!newPassword.equals(confirmPassword)) {
+                return "redirect:/admin/users?error=Passwords do not match";
+            }
+            existingUser.setPasswordHash(passwordEncoder.encode(newPassword));
+        }
 
         userRepository.save(existingUser);
         return "redirect:/admin/users?success=User updated successfully";
@@ -68,5 +81,31 @@ public class AdminUserController {
     public String deleteUser(@PathVariable Long id) {
         userRepository.deleteById(id);
         return "redirect:/admin/users?success=User deleted successfully";
+    }
+
+    // 5. Admin-initiated password reset
+    @PostMapping("/{id}/reset-password")
+    public String adminResetPassword(@PathVariable Long id,
+                                     @RequestParam("newPassword") String newPassword,
+                                     @RequestParam("confirmPassword") String confirmPassword,
+                                     Principal principal) {
+        User admin = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!"ROLE_ADMIN".equals(admin.getRole())) {
+            return "redirect:/dashboard?error=unauthorized";
+        }
+
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
+            return "redirect:/admin/users?error=Password must be at least 6 characters";
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            return "redirect:/admin/users?error=Passwords do not match";
+        }
+
+        User target = userRepository.findById(id).orElseThrow();
+        target.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(target);
+
+        return "redirect:/admin/users?success=Password reset successfully";
     }
 }

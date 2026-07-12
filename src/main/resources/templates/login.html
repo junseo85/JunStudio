@@ -18,8 +18,17 @@
             <div th:if="${param.error != null and param.error[0] == 'dbError'}" class="alert alert-danger text-center">
                 A system error occurred while creating your account. Please try again.
             </div>
+            <div th:if="${param.error != null and param.error[0] == 'invalidResetToken'}" class="alert alert-warning text-center">
+                This password reset link is invalid or has expired. Please request a new one.
+            </div>
             <div th:if="${param.registered}" class="alert alert-success text-center">
                 Account created successfully! Please log in.
+            </div>
+            <div th:if="${param.resetRequested}" class="alert alert-info text-center">
+                Please check your email inbox and spam folder for a link to change your password.
+            </div>
+            <div th:if="${param.passwordResetSuccess}" class="alert alert-success text-center">
+                Your password has been reset. Please log in with your new password.
             </div>
 
             <div class="card shadow-sm">
@@ -32,13 +41,21 @@
                             <input type="email" id="username" name="username" class="form-control" required>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-2">
                             <label for="password" class="form-label">Password</label>
                             <input type="password" id="password" name="password" class="form-control" required>
                         </div>
 
+                        <div class="text-end mb-3">
+                            <a href="#" class="text-decoration-none small" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot Password?</a>
+                        </div>
+
                         <button type="submit" class="btn btn-primary w-100">Log In</button>
                     </form>
+
+                    <div class="text-center mt-2">
+                        <a href="/password-reset/request" class="text-decoration-none text-muted small">Forgot your password?</a>
+                    </div>
 
                     <div class="text-center mt-3">
                         <p class="text-muted">Don't have an account? <a href="/register" class="text-decoration-none">Sign up here</a></p>
@@ -48,6 +65,32 @@
 
         </div>
     </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/password-reset/request}" method="POST">
+                    <div class="modal-body">
+                        <p class="text-muted">Enter the email address associated with your account and we will send you a link to reset your password.</p>
+                        <div class="mb-3">
+                            <label for="resetEmail" class="form-label">Email Address</label>
+                            <input type="email" id="resetEmail" name="email" class="form-control" placeholder="name@example.com" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </main>
 
 </body>
