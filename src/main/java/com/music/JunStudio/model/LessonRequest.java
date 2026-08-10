@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "lesson_requests")
-@Data
+@Data// annotation from Lombok that automatically generates getters,setters etc
 @NoArgsConstructor
 @AllArgsConstructor
 public class LessonRequest {

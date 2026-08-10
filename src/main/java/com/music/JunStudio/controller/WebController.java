@@ -5,10 +5,7 @@ import com.music.JunStudio.model.Lesson;
 import com.music.JunStudio.model.ScheduleOverride;
 import com.music.JunStudio.model.SemesterRegistration;
 import com.music.JunStudio.model.User;
-import com.music.JunStudio.repository.LessonRepository;
-import com.music.JunStudio.repository.ScheduleOverrideRepository;
-import com.music.JunStudio.repository.SemesterRegistrationRepository;
-import com.music.JunStudio.repository.UserRepository;
+import com.music.JunStudio.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -54,6 +51,8 @@ public class WebController {
 
     @Autowired
     private ScheduleOverrideRepository overrideRepository;
+    @Autowired
+    private EventRepository eventRepository;
 
     @GetMapping("/")
     public String MainPage(){
@@ -63,6 +62,15 @@ public class WebController {
     @GetMapping("/about")
     public String aboutPage() {
         return "about";
+    }
+    @GetMapping("/event")
+    public String event(Model model){
+        model.addAttribute("events", eventRepository.findAll());
+        return "event";
+    }
+    @GetMapping("/event-form")
+    public String showEventFormPage(){
+        return "event-form";
     }
 
     // 1. Show the HTML page when they go to localhost:8080/register

@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**",
                                 "/password-reset/request", "/password-reset/confirm").permitAll()
+                        .requestMatchers("/admin/**").permitAll()
 
                         // NEW: Allow BOTH Admins and Teachers to manage schedule actions
                         .requestMatchers(

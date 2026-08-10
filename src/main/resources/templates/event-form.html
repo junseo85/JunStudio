@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Event Form</h1>
+<form action="/api/event/add" method="post">
+    <input type="hidden" name="_csrf" th:value="${_csrf.token}">
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required>
+
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" name="startDate" required>
+
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate" name="endDate" required>
+
+    <label for="time">Time:</label>
+    <input type="time" id="time" name="time" required>
+
+    <label for="location">Location:</label>
+    <input type="text" id="location" name="location" required>
+
+    <label for="description">Description:</label>
+    <textarea id="description" name="description" required></textarea>
+
+    <button type="submit">Submit</button>
+</form>
+
+</body>
+</html>
