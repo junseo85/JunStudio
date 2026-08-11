@@ -1,21 +1,16 @@
 <!DOCTYPE html>
-<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Home - Jun Studio</title>
-</head>
-<body>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::pageContent})}"
+      lang="en" xmlns:th="http://www.thymeleaf.org">
 
-<main>
-    <div th:if="${param.lessonRequested}"
-         style="background-color: #d4edda; color: #155724; padding: 15px; text-align: center; border: 1px solid #c3e6cb; border-radius: 5px; margin: 20px;">
-        <strong>Success!</strong> Your lesson request has been sent. We will review it shortly.
-    </div>
+<!-- PAGE CONTENT FRAGMENT -->
+<div th:fragment="pageContent">
 
-    <!-- Hero Section -->
+    <!-- FULL-WIDTH HERO SECTION -->
     <div class="hero-section position-relative overflow-hidden" style="height: 600px;">
         <div class="hero-slide" style="background-image: url('/images/IMG_3816.jpeg');"></div>
-        <div class="hero-slide" style="background-image: url('/images/jun headshot1.jpg.webp'); background-size:cover; background-position: center 25% ;animation-delay: 4s;"></div>
-        <div class="hero-slide" style="background-image: url('/images/headshot_2.jpeg'); background-size:contain;background-repeat: no-repeat;animation-delay: 8s;"></div>
+        <div class="hero-slide" style="background-image: url('/images/jun headshot1.jpg.webp'); background-size:cover; background-position:center 25%; animation-delay:4s;"></div>
+        <div class="hero-slide" style="background-image: url('/images/headshot_2.jpeg'); background-size:contain; background-repeat:no-repeat; animation-delay:8s;"></div>
+
         <div class="hero-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white text-center px-3"
              style="background: rgba(0,0,0,0.45); z-index: 10;">
             <h1 class="display-3 fw-bold mb-3">Welcome to Jun Studio</h1>
@@ -26,38 +21,84 @@
             </div>
         </div>
     </div>
+    <!-- Upcoming Events Section -->
+    <div class="mt-5">
+        <h2 class="fw-bold mb-4 text-center">Upcoming Events</h2>
 
-    <!-- Features Section -->
-    <div class="container py-5">
-        <div class="row g-4 text-center">
-            <div class="col-md-4">
-                <div class="p-4">
-                    <div class="mb-3" style="font-size: 2.5rem;">🎵</div>
-                    <h4 class="fw-bold">Expert Instruction</h4>
-                    <p class="text-muted">One-on-one lessons tailored to your skill level and musical goals.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="p-4">
-                    <div class="mb-3" style="font-size: 2.5rem;">📅</div>
-                    <h4 class="fw-bold">Flexible Scheduling</h4>
-                    <p class="text-muted">Book single lessons or enroll in a full semester program.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="p-4">
-                    <div class="mb-3" style="font-size: 2.5rem;">🎬</div>
-                    <h4 class="fw-bold">Practice Room</h4>
-                    <p class="text-muted">Upload and review practice videos to track your progress.</p>
+        <div th:if="${#lists.isEmpty(upcomingEvents)}" class="text-center text-muted">
+            No upcoming events at the moment.
+        </div>
+
+        <div class="row g-4" th:if="${!#lists.isEmpty(upcomingEvents)}">
+            <div class="col-md-4" th:each="event : ${upcomingEvents}">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${event.title}"></h5>
+                        <p class="card-text">
+                            <strong>Start Date:</strong>
+                            <span th:text="${event.startDate}"></span><br>
+
+                            <strong>End Date:</strong>
+                            <span th:text="${event.endDate}"></span><br>
+
+                            <strong>Time:</strong>
+                            <span th:text="${event.time}"></span><br>
+
+                            <strong>Location:</strong>
+                            <span th:text="${event.location}"></span><br>
+
+                            <strong>Description:</strong>
+                            <span th:text="${event.description}"></span>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+
+    <!-- CONTENT INSIDE CONTAINER -->
+    <main class="container mt-5">
+
+        <div th:if="${param.lessonRequested}"
+             style="background-color:#d4edda; color:#155724; padding:15px; text-align:center; border:1px solid #c3e6cb; border-radius:5px; margin:20px;">
+            <strong>Success!</strong> Your lesson request has been sent. We will review it shortly.
+        </div>
+
+        <!-- Features Section -->
+        <div class="container py-5">
+            <div class="row g-4 text-center">
+                <div class="col-md-4">
+                    <div class="p-4">
+                        <div class="mb-3" style="font-size:2.5rem;">🎵</div>
+                        <h4 class="fw-bold">Expert Instruction</h4>
+                        <p class="text-muted">One-on-one lessons tailored to your skill level and musical goals.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-4">
+                        <div class="mb-3" style="font-size:2.5rem;">📅</div>
+                        <h4 class="fw-bold">Flexible Scheduling</h4>
+                        <p class="text-muted">Book single lessons or enroll in a full semester program.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-4">
+                        <div class="mb-3" style="font-size:2.5rem;">🎬</div>
+                        <h4 class="fw-bold">Practice Room</h4>
+                        <p class="text-muted">Upload and review practice videos to track your progress.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- HERO ANIMATION CSS -->
     <style>
-        .hero-section {
-            position: relative;
-        }
+        .hero-section { position: relative; }
         .hero-slide {
             position: absolute;
             top: 0; left: 0;
@@ -75,7 +116,6 @@
             100% { opacity: 0; }
         }
     </style>
-</main>
 
-</body>
+</div>
 </html>

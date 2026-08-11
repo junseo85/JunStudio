@@ -1,10 +1,7 @@
 package com.music.JunStudio.controller;
 
 import com.music.JunStudio.dto.AdminLessonDTO;
-import com.music.JunStudio.model.Lesson;
-import com.music.JunStudio.model.ScheduleOverride;
-import com.music.JunStudio.model.SemesterRegistration;
-import com.music.JunStudio.model.User;
+import com.music.JunStudio.model.*;
 import com.music.JunStudio.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -55,7 +52,10 @@ public class WebController {
     private EventRepository eventRepository;
 
     @GetMapping("/")
-    public String MainPage(){
+    public String MainPage(Model model){
+        LocalDate today = LocalDate.now();
+        List<Event> upcomingEvents = eventRepository.findByEndDateGreaterThanEqualOrderByStartDateAsc( today );
+        model.addAttribute("upcomingEvents", upcomingEvents);
         return "index";
     }
 
