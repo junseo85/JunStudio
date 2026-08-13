@@ -1,5 +1,6 @@
 package com.music.JunStudio.security;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService; // Add this import!
 import org.springframework.context.annotation.Bean;
@@ -32,10 +33,12 @@ public class SecurityConfig {
     @Bean
     public org.springframework.security.web.SecurityFilterChain filterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**",
                                 "/password-reset/request", "/password-reset/confirm").permitAll()
                         .requestMatchers("/admin/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/event/delete/**").permitAll()
 
                         // NEW: Allow BOTH Admins and Teachers to manage schedule actions
                         .requestMatchers(
@@ -44,6 +47,7 @@ public class SecurityConfig {
                                 "/admin/override",
                                 "/semester/assign", // Locked down!
                                 "/semester/reject"  // Locked down!
+
                         ).hasAnyRole("ADMIN", "TEACHER")
 
                         .anyRequest().authenticated()
