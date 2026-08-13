@@ -30,6 +30,7 @@ public class AdminUserController {
         }
 
         model.addAttribute("isAdmin", true);
+        model.addAttribute("isTeacher", false);
 
         List<User> users = userRepository.findAll();
         model.addAttribute("users", users);

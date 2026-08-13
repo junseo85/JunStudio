@@ -33,7 +33,7 @@ public class SecurityConfig {
     @Bean
     public org.springframework.security.web.SecurityFilterChain filterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/audition/**"))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**",
                                 "/password-reset/request", "/password-reset/confirm").permitAll()

@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+
+
 <head>
     <title>Audition Room - Jun Studio</title>
 </head>
@@ -50,14 +52,14 @@
     <nav th:if="${videoPage.totalPages > 1}" class="mt-5" aria-label="Audition gallery pagination">
         <ul class="pagination justify-content-center">
             <li class="page-item" th:classappend="${videoPage.first ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/audition(page=${videoPage.number - 1}, search=${search})}">Previous</a>
+                <a class="page-link" th:href="@{/audition(page=${videoPage.number - 1}, search=${param.search})}">Previous</a>
             </li>
             <li class="page-item" th:each="i : ${#numbers.sequence(0, videoPage.totalPages - 1)}"
                 th:classappend="${videoPage.number == i ? 'active' : ''}">
-                <a class="page-link" th:href="@{/audition(page=${i}, search=${search})}" th:text="${i + 1}">1</a>
+                <a class="page-link" th:href="@{/audition(page=${i}, search=${param.search})}" th:text="${i + 1}">1</a>
             </li>
             <li class="page-item" th:classappend="${videoPage.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/audition(page=${videoPage.number + 1}, search=${search})}">Next</a>
+                <a class="page-link" th:href="@{/audition(page=${videoPage.number + 1}, search=${param.search})}">Next</a>
             </li>
         </ul>
     </nav>
@@ -71,7 +73,7 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form th:action="@{/audition/upload}" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Video Title</label>
