@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Large File Upload</title>
+</head>
+<body>
+<h2>Upload Large File (up to 20GB)</h2>
+
+<input type="file" id="fileInput" />
+<button id="uploadBtn">Upload</button>
+<br /><br />
+<progress id="progress" value="0" max="100" style="width: 320px;"></progress>
+<div id="status"></div>
+
+<script type="module">
+  import { uploadLargeFile } from "/js/uploader.js";
+
+  const fileInput = document.getElementById("fileInput");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const progress = document.getElementById("progress");
+  const status = document.getElementById("status");
+
+  uploadBtn.addEventListener("click", async () => {
+    const file = fileInput.files?.[0];
+    if (!file) {
+      alert("Select a file first");
+      return;
+    }
+
+    const max20GB = 20 * 1024 * 1024 * 1024;
+    if (file.size > max20GB) {
+      alert("Max file size is 20GB");
+      return;
+    }
+
+    status.textContent = "Uploading...";
+    progress.value = 0;
+
+    try {
+      const result = await uploadLargeFile(file, {
+        onProgress: ({ percent }) => {
+          progress.value = percent;
+          status.textContent = `Uploading... ${percent.toFixed(2)}%`;
+        }
+      });
+
+      status.textContent =
+              `Uploaded successfully. Media ID: ${result.mediaFileId}, status: ${result.processingStatus}`;
+    } catch (e) {
+      status.textContent = `Upload failed: ${e.message}`;
+    }
+  });
+</script>
+</body>
+</html>

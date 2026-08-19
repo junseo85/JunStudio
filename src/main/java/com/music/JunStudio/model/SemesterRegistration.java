@@ -30,7 +30,7 @@ public class SemesterRegistration {
     private String term;
 
     // e.g., 2026
-    @Column(nullable = false)
+    @Column(name="year_value",nullable = false)
     private int year;
 
     // Student Preferences
@@ -44,7 +44,7 @@ public class SemesterRegistration {
     private String memo;
 
     // Teacher Assignments (Null until the teacher approves)
-    @Column(name = "assigned_day")
+    @Column(name = "assigned_day",columnDefinition = "varchar(255)")
     @Enumerated(EnumType.STRING)
     private DayOfWeek assignedDay;
 
