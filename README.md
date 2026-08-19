@@ -1,13 +1,16 @@
 # JunStudio — Full Stack Cello Instruction Platform
 
-JunStudio is a production-ready web application designed for music educators to manage **students**, **scheduling**, and **payments**. This project represents my career transition from 20+ years of professional experience into full-stack software engineering.
+JunStudio is a production-ready web application designed for music educators to manage **students**, **scheduling**, **payments**, and now **large media uploads (5–20 GB)** for lesson content and ML analysis workflows.
+
+This project represents my transition from 20+ years of professional performance/teaching experience into full-stack software engineering.
 
 ---
 
 ## 🚀 Live Production Environment
 
 - **Domain:** `celloJun.com`
-- **Architecture:** AWS EKS (Kubernetes) + RDS (MySQL) + Cloudflare
+- **Architecture:** AWS EC2 (Docker Compose) + RDS (MySQL) + Cloudflare  
+  *(legacy branch/history includes AWS EKS/Fargate architecture)*
 
 ---
 
@@ -23,43 +26,73 @@ JunStudio is a production-ready web application designed for music educators to 
 - React.js
 - Tailwind CSS
 - Framer Motion
+- Vanilla JS upload module (chunked/resumable uploader)
 
 ### Database
 - Amazon RDS (MySQL)
 
 ### Cloud & DevOps
-- AWS EKS (Fargate)
-- Docker
-- Kubernetes
-- AWS Load Balancer Controller
-
-### Security / Edge
-- Cloudflare DNS
-- SSL/TLS Encryption
+- AWS EC2
+- Docker / Docker Compose
+- Linux (Amazon Linux 2023)
+- Cloudflare DNS + SSL/TLS
 
 ### Integrations
 - **Payments:** Stripe API (Test Mode Integration)
-- **Email:** Java Mail Sender (SMTP) via Gmail API for automated lesson confirmations and user notifications
+- **Email:** Java Mail Sender (SMTP) for booking confirmations and user notifications
+- **Storage:** S3-compatible object storage with multipart uploads (pre-signed URLs)
 
 ---
 
 ## 💎 Core Features
 
 - **Student Dashboard:** Real-time view of upcoming cello lessons and practice materials
-- **Automated Scheduling:** Synchronized calendar system with instant email confirmations for both instructor and student
-- **Secure Payments:** Integrated Stripe checkout for lesson packages with automated digital receipting
-- **Teacher Admin Panel:** Centralized hub for managing student rosters and tracking studio revenue
+- **Automated Scheduling:** Synchronized booking flow with instant notifications
+- **Secure Payments:** Stripe checkout for lesson packages with digital receipting
+- **Teacher Admin Panel:** Centralized student/lesson/revenue management
+- **Large File Uploads:** Resumable, chunked uploads for 5–20 GB media files
+- **Upload Safety Pipeline:** Session validation, idempotent part updates, completeness checks, and stale-session cleanup
+
+---
+
+## 📦 New: Large File Upload System (5–20 GB)
+
+JunStudio now supports **large media ingestion** without degrading page or API performance.
+
+### Why this architecture?
+Uploading 20GB files through the app server can cause memory pressure, request timeouts, and unstable UX.  
+To prevent this, JunStudio uses **direct-to-storage multipart uploads**.
+
+### Upload flow
+1. Client creates an upload session via Spring Boot API
+2. Server initializes multipart upload and returns session metadata
+3. Client requests pre-signed URLs for part numbers
+4. Browser uploads chunks directly to storage (parallel + retry/backoff)
+5. Client registers uploaded part metadata (`etag`, size)
+6. Server validates parts and finalizes multipart upload
+7. Media metadata is persisted and marked for async processing
+
+### Implemented hardening
+- Part number validation (`1..totalParts`)
+- Session state guards (`INIT/UPLOADING` only)
+- Session expiration checks
+- Idempotent part registration (safe retries)
+- Finalize completeness verification (all parts present)
+- Terminal-state protection (`COMPLETED`, `ABORTED`, `EXPIRED`)
+- Scheduled cleanup for expired/stale multipart sessions
+- Authenticated upload ownership via Spring Security principal
 
 ---
 
 ## 🏗️ Infrastructure & Architecture
 
-The platform is built on a professional-grade cloud stack designed for high availability and security:
+The platform is built for production security, resilience, and cost-efficiency:
 
-- **Orchestration:** Deployed on Amazon EKS using Fargate profiles for serverless pod execution (no EC2 instance management)
-- **Networking:** Traffic routed through an AWS Network Load Balancer (NLB) and secured at the edge by Cloudflare for optimized global latency and DDoS protection
-- **Data Persistence:** Managed Amazon RDS instance configured within a private VPC subnet to ensure data isolation and security
-- **Configuration Management:** Kubernetes Secrets securely inject production credentials (RDS, Stripe, SMTP) at runtime, keeping the repository free of sensitive data
+- **Application Runtime:** Containerized Spring Boot + frontend deployment on EC2
+- **Data Persistence:** Managed Amazon RDS in private VPC boundaries
+- **Edge Security:** Cloudflare proxy + SSL/TLS for secure public access
+- **Credential Safety:** Runtime secret/config injection (no hardcoded credentials)
+- **Object Storage Offload:** Large file payloads bypass app-server memory path
 
 ---
 
@@ -67,25 +100,31 @@ The platform is built on a professional-grade cloud stack designed for high avai
 
 JunStudio includes an automated notification system to keep teachers and students synchronized:
 
-- **Trigger-Based Notifications:** Sends professionally formatted HTML emails upon successful registration, lesson scheduling, and payment confirmation
-- **Production Security:** Uses Google App Passwords + Kubernetes Secrets for SMTP authentication so credentials are never exposed
-- **Asynchronous Execution (Optional):** If implemented via `@Async`, email dispatch runs asynchronously to keep the UI responsive
+- **Trigger-Based Notifications:** Sends formatted emails upon registration, booking, and payment events
+- **Credential Security:** Secrets managed outside source-controlled code
+- **Async-Friendly Design:** Notification workloads can run asynchronously to preserve API responsiveness
 
 ---
 
-## 🧠 Key Engineering Challenges
+## 🚀 Key Engineering Challenges & Solutions
 
-### Cross-VPC Connectivity & Security
-During the migration from a containerized local database to Amazon RDS, I encountered a `SocketTimeoutException` caused by VPC isolation. I diagnosed the networking conflict and resolved the issue by correctly configuring VPC access and security boundaries.
+### 1) Infrastructure Migration (EKS → EC2)
+- **Problem:** EKS/Fargate overhead was too expensive for solo project economics.
+- **Solution:** Migrated to EC2 + Docker Compose, reducing monthly infrastructure cost by **~95%** while preserving production-grade service delivery.
 
-### Zero-Downtime Deployments
-Implemented Kubernetes Rolling Updates and `kubectl rollout` management so that environment variable updates and code changes can be deployed without service interruption.
+### 2) JVM Stability on Resource-Constrained Host
+- **Problem:** Container memory contention on small instance sizes.
+- **Solution:** Linux swap + JVM tuning stabilized memory-intensive startup/runtime behavior.
+
+### 3) Large Upload Reliability & Performance
+- **Problem:** Very large uploads risk timeout/restart and can degrade site performance.
+- **Solution:** Implemented resumable multipart direct-upload architecture with part-level retry, idempotent updates, and finalize integrity checks.
 
 ---
 
 ## 🔑 Access & Testing
 
-To review the platform’s functionality, use the credentials below.
+To review the platform functionality, use:
 
 ### User Roles
 
@@ -94,13 +133,11 @@ To review the platform’s functionality, use the credentials below.
 - **Password:** `test123`
 
 **Student Account**
-- Create a new account via the Sign-Up page.
+- Register via Sign-Up page.
 
 ---
 
 ## 💳 Stripe Checkout (Test Mode)
-
-Stripe is integrated in **Test Mode**.
 
 - **Card Number:** `4242 4242 4242 4242`
 - **Expiry:** Any future date
@@ -108,69 +145,49 @@ Stripe is integrated in **Test Mode**.
 
 ---
 
-# 🎼 JunStudio: Music Lesson Management Platform
-> **Strategic Cost-Optimized Deployment Edition (EC2 Branch)**
+## 📂 Representative Upload Module Structure
 
-**Live Platform:** [https://cellojun.com](https://cellojun.com)  
-**Architecture:** Multi-Container Docker on AWS EC2 + AWS RDS
+```text
+src/main/java/com/junstudio/upload/
+  api/UploadController.java
+  dto/UploadDtos.java
+  service/UploadService.java
+  service/UploadServiceImpl.java
+  storage/StorageMultipartService.java
+  storage/S3MultipartStorageService.java
+  scheduler/UploadCleanupScheduler.java
+  security/UploadAuthHelper.java
 
----
+src/main/resources/db/migration/
+  V1__large_upload_tables.sql
 
-## 📖 Project Overview
-**JunStudio** is a full-stack studio management solution built to eliminate administrative friction for music educators. It features a "three-click" lesson booking system, an automated admin dashboard for revenue and scheduling analytics, and secure role-based access control.
-
-### **The "Why" Behind This Branch**
-While the `master` branch utilizes a high-availability **AWS EKS (Kubernetes)** cluster, this branch represents a complete migration to a standalone **AWS EC2** architecture. By transitioning from EKS/Fargate to a containerized EC2 setup, I successfully reduced the monthly infrastructure "burn rate" by over **95%** while maintaining production performance and security.
-
----
-
-## 🛠 Tech Stack
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React.js, Tailwind CSS, Framer Motion (UI/UX) |
-| **Backend** | Java 17, Spring Boot, Spring Security (JWT) |
-| **Database** | AWS RDS (MySQL 8.0) |
-| **DevOps** | Docker, Docker Compose, Linux (Amazon Linux 2023) |
-| **Networking** | Cloudflare (Proxy, SSL/TLS), Reverse Proxy Orchestration |
-
----
-
-## 🚀 Key Engineering Challenges & Solutions
-
-### **1. Infrastructure Migration (EKS → EC2)**
-* **Problem:** The original EKS Control Plane cost ~$72/month, making it unsustainable for a solo project.
-* **Solution:** Migrated the orchestration to a single `t3.micro` EC2 instance using **Docker Compose**. I manually configured the networking layer to bridge the gap between Docker's internal bridge network and the AWS VPC.
-
-### **2. JVM Performance Tuning on Limited Hardware**
-* **Problem:** Spring Boot and MySQL containers combined exceed the 1GB RAM limit of a `t3.micro` instance, leading to "Out of Memory" (OOM) crashes.
-* **Solution:** Implemented **2GB of Swap Space (Virtual RAM)** on the Linux host. This allowed the JVM to handle memory-intensive startup tasks without requiring an expensive instance upgrade.
-
-### **3. Production Networking & SSL**
-* **Problem:** AWS Load Balancers (ALB) add significant monthly costs.
-* **Solution:** Leveraged **Cloudflare’s Flexible SSL** and configured a manual reverse proxy within Docker. By mapping internal container port `8080` to host port `80`, I achieved a professional `https://` domain experience with $0 overhead.
-
----
-
-## 📊 Features
-* **Admin Analytics:** High-efficiency data mapping in the Java backend converts raw relational data into drill-down charts for lesson reporting.
-* **Booking System:** A user-centric React interface designed for students to book lessons in under 3 clicks.
-* **Secure Authentication:** JWT-based stateless authentication with secure role-based navigation.
+src/main/resources/static/
+  upload.html
+  js/uploader.js
+```
 
 ---
 
 ## 📦 Local & Deployment Setup
 
-### **Prerequisites**
-* Docker & Docker Compose
-* Java 17 (for local dev)
+### Prerequisites
+- Docker & Docker Compose
+- Java 17
+- MySQL / RDS access
+- S3-compatible bucket credentials
+- Stripe + SMTP secrets
 
-### **Deployment Command**
+### Example run
 ```bash
-# Clone the optimized branch
-git clone -b EC2 https://github.com/junseo85/JunStudio.git
+git clone https://github.com/junseo85/JunStudio.git
 cd JunStudio
-
-# Start the environment
 docker-compose up -d --build
 ```
 
+---
+
+## 🧭 Notes
+
+- Legacy architecture/history references to EKS remain for portfolio context.
+- Active deployment strategy is cost-optimized EC2 container orchestration.
+- Upload subsystem is designed for future ML/transcoding queue integration.
