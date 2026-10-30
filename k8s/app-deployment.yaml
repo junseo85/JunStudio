@@ -59,6 +59,10 @@ spec:
                   name: junstudio-secrets
                   key: MAIL_PASS
 
+            # Practice Coach analysis service (see practice-helper-deployment.yaml)
+            - name: PRACTICE_HELPER_URL
+              value: "http://practice-helper:5000"
+
             # General Settings
             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
               value: "update"
