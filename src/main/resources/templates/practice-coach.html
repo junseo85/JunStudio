@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html th:replace="~{layouts/DefaultLayout :: layout(~{::main})}" lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Practice Coach - Jun Studio</title>
+</head>
+<body>
+<main class="container mt-5 mb-5">
+    <span id="csrfMeta" hidden th:data-header="${_csrf.headerName}" th:data-token="${_csrf.token}"></span>
+
+    <h2>Practice Coach</h2>
+    <p class="text-muted">Get instant note-by-note feedback, no teacher needed:
+        1) load your sheet music, 2) record or upload your playing, 3) compare.</p>
+
+    <div class="card mb-3"><div class="card-body">
+        <h5 class="card-title">1. Sheet music</h5>
+        <div class="mb-2"><label class="form-label">Image or PDF (single melodic line)</label>
+            <input class="form-control" type="file" id="scoreFile" accept=".png,.jpg,.jpeg,.pdf"></div>
+        <div class="mb-2"><label class="form-label">or a saved score analysis (.json)</label>
+            <input class="form-control" type="file" id="scoreJson" accept=".json"></div>
+        <button class="btn btn-outline-secondary btn-sm" id="sampleScore" type="button">Use sample score</button>
+        <div class="status small mt-2" id="scoreStatus">No score loaded.</div>
+    </div></div>
+
+    <div class="card mb-3"><div class="card-body">
+        <h5 class="card-title">2. Your playing</h5>
+        <button class="btn btn-danger btn-sm" id="recBtn" type="button">&#9210; Record</button>
+        <button class="btn btn-secondary btn-sm" id="stopBtn" type="button" disabled>&#9209; Stop</button>
+        <div class="mt-2"><label class="form-label">or upload audio</label>
+            <input class="form-control" type="file" id="audioFile" accept="audio/*"></div>
+        <audio id="player" controls class="mt-2" style="display:none"></audio>
+        <div class="status small mt-2" id="audioStatus">No audio loaded.</div>
+    </div></div>
+
+    <div class="card mb-3"><div class="card-body">
+        <h5 class="card-title">3. Result</h5>
+        <button class="btn btn-primary" id="compareBtn" type="button">Compare</button>
+        <div class="form-check d-inline-block ms-3">
+            <input class="form-check-input" type="checkbox" id="ignoreOctave" checked>
+            <label class="form-check-label" for="ignoreOctave">Treat octave-only differences (A4 vs A3) as correct</label>
+        </div>
+        <div class="status small mt-2" id="resultStatus"></div>
+        <div class="table-responsive mt-2" id="result"></div>
+    </div></div>
+
+    <style>
+        .status.err { color: #b00020; }
+        #result td.tag-ok { color: #1b7f1b; font-weight: 600; }
+        #result td.tag-bad { color: #b00020; font-weight: 600; }
+        #result tr.ok { background: #e6f6e6; } #result tr.bad { background: #fde8e8; } #result tr.extra { background: #fff4d6; }
+        #result table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+        #result th, #result td { border-bottom: 1px solid #ddd; padding: .35rem .5rem; text-align: left; }
+    </style>
+
+    <script th:inline="none">
+const $ = id => document.getElementById(id);
+const csrfHeaders = () => ({ [$("csrfMeta").dataset.header]: $("csrfMeta").dataset.token });
+let score = null, audio = null;
+
+const SAMPLE_SCORE = { detected_notes: [
+  ["D3",50,1],["F3",53,1],["A3",57,2],["G3",55,1],["E3",52,1]
+].map(([note, midi, beat_ratio], i) => ({
+  index: i + 1, measure: 1, note, midi, is_rest: false,
+  rhythm_value: beat_ratio === 2 ? "half note" : "quarter note", beat_ratio }))};
+
+function setStatus(id, msg, isErr) { const e = $(id); e.textContent = msg; e.className = "status" + (isErr ? " err" : ""); }
+
+async function postForm(url, field, file) {
+  const fd = new FormData(); fd.append(field, file);
+  const r = await fetch(url, { method: "POST", body: fd, headers: csrfHeaders() });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+
+async function loadScore(field, file) {
+  setStatus("scoreStatus", "Analyzing score... (first OMR run can take minutes)");
+  try {
+    score = await postForm("/practice-coach/api/score", field, file);
+    const n = score.detected_notes.filter(x => !x.is_rest).length;
+    setStatus("scoreStatus", `Loaded ${n} written notes.` + (score.time_signature ? ` Time ${score.time_signature}.` : ""));
+  } catch (e) { score = null; setStatus("scoreStatus", e.message, true); }
+}
+$("scoreFile").onchange = e => e.target.files[0] && loadScore("file", e.target.files[0]);
+$("scoreJson").onchange = e => e.target.files[0] && loadScore("json", e.target.files[0]);
+$("sampleScore").onclick = () => { score = SAMPLE_SCORE; setStatus("scoreStatus", "Sample score: D3 F3 A3(half) G3 E3 (quarter = 1 beat)."); };
+
+// Convert any browser-decodable audio to 16-bit mono WAV so the server needs no ffmpeg.
+async function toWav(blob) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+  await ctx.close();
+  const ch = buf.getChannelData(0), n = ch.length, out = new DataView(new ArrayBuffer(44 + n * 2));
+  const w = (o, s) => [...s].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); out.setUint32(4, 36 + n * 2, true); w(8, "WAVEfmt ");
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, buf.sampleRate, true); out.setUint32(28, buf.sampleRate * 2, true);
+  out.setUint16(32, 2, true); out.setUint16(34, 16, true); w(36, "data"); out.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, ch[i])) * 0x7fff, true);
+  return new Blob([out], { type: "audio/wav" });
+}
+
+async function loadAudio(blob) {
+  setStatus("audioStatus", "Analyzing audio...");
+  try {
+    const wav = await toWav(blob);
+    $("player").src = URL.createObjectURL(wav); $("player").style.display = "block";
+    audio = await postForm("/practice-coach/api/audio", "file", new File([wav], "audio.wav"));
+    setStatus("audioStatus", `Detected ${audio.detected_notes.length} notes, ~${audio.tempo_bpm} BPM.`);
+  } catch (e) { audio = null; setStatus("audioStatus", e.message, true); }
+}
+$("audioFile").onchange = e => e.target.files[0] && loadAudio(e.target.files[0]);
+
+let recorder, chunks;
+$("recBtn").onclick = async () => {
+  try {
+    // Disable processing that would suppress or color the instrument sound.
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    recorder = new MediaRecorder(stream); chunks = [];
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = () => { stream.getTracks().forEach(t => t.stop()); loadAudio(new Blob(chunks)); };
+    recorder.start();
+    $("recBtn").disabled = true; $("stopBtn").disabled = false; setStatus("audioStatus", "Recording...");
+  } catch (e) { setStatus("audioStatus", "Microphone unavailable: " + e.message, true); }
+};
+$("stopBtn").onclick = () => { recorder.stop(); $("recBtn").disabled = false; $("stopBtn").disabled = true; };
+
+const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+function render(res) {
+  let n = 0, html = "<table><tr><th>#</th><th>Meas</th><th>Written</th><th>Played</th><th>Played meas</th><th>Pitch</th><th>Rhythm</th></tr>";
+  for (const r of res.rows) {
+    if (r.status === "extra") {
+      html += `<tr class="extra"><td></td><td></td><td>${esc(r.played.note)}</td><td>${r.played_measure ?? "?"}</td><td colspan="2">EXTRA NOTE @ ${r.played.onset_sec}s</td></tr>`;
+      continue;
+    }
+    n++;
+    const w = r.written, wt = `${esc(w.note)} ${esc(w.rhythm_value.replace(" note", ""))}`;
+    if (r.status === "missed") {
+      html += `<tr class="bad"><td>${n}</td><td>${w.measure}</td><td>${wt}</td><td>-</td><td>-</td><td colspan="2" class="tag-bad">MISSED</td></tr>`;
+      continue;
+    }
+    const pOk = r.pitch_ok, rOk = r.rhythm_ok;
+    const pt = pOk && r.octave_shift ? `OK (octave ${r.semitone_diff > 0 ? "+" : ""}${r.semitone_diff})` : pOk ? "OK" : `WRONG (${r.semitone_diff > 0 ? "+" : ""}${r.semitone_diff} st)`;
+    const rt = rOk === null ? "n/a" : `${rOk ? "OK" : "WRONG"} (x${r.duration_ratio})`;
+    html += `<tr class="${pOk && rOk !== false ? "ok" : "bad"}"><td>${n}</td><td>${w.measure}</td><td>${wt}</td><td>${esc(r.played.note)}</td><td>${r.played_measure ?? "?"}</td>` +
+      `<td class="${pOk ? "tag-ok" : "tag-bad"}">${pt}</td><td class="${rOk === false ? "tag-bad" : "tag-ok"}">${rt}</td></tr>`;
+  }
+  const s = res.summary;
+  $("result").innerHTML = html + "</table>";
+  setStatus("resultStatus", `Tempo ~${res.estimated_bpm ?? "n/a"} BPM | Pitch ${s.pitch_correct}/${s.written_notes} | ` +
+    `Rhythm ${s.rhythm_correct}/${s.written_notes} | Octave-shifted ${s.octave_shifted} | Missed ${s.missed} | Extra ${s.extra}`);
+}
+
+$("compareBtn").onclick = async () => {
+  if (!score || !audio) return setStatus("resultStatus", "Load sheet music and audio first.", true);
+  try {
+    const r = await fetch("/practice-coach/api/compare", { method: "POST", headers: { "Content-Type": "application/json", ...csrfHeaders() }, body: JSON.stringify({ score, audio, ignore_octave: $("ignoreOctave").checked }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    render(data);
+  } catch (e) { setStatus("resultStatus", e.message, true); }
+};
+</script>
+</main>
+</body>
+</html>
