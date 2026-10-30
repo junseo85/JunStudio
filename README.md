@@ -38,7 +38,7 @@ JunStudio is a production-ready web application designed for music educators to 
 - SSL/TLS Encryption
 
 ### Practice Coach (instant practice feedback)
-Logged-in students can scan sheet music, record or upload their playing, and get note-by-note pitch/rhythm feedback at `/practice-coach`. The analysis runs in the separate [practice_helper](https://github.com/junseo85/practice_helper) Python service; `PracticeCoachController` proxies to it (behind login + CSRF). Run that service (`docker compose up` starts it if `practice_helper` is cloned next to this repo; on Kubernetes see `k8s/practice-helper-deployment.yaml`, ClusterIP only) and set `PRACTICE_HELPER_URL` (default `http://localhost:5000`). If it is down, the page shows a friendly "unavailable" message.
+Logged-in students can scan sheet music, record or upload their playing, and get note-by-note pitch/rhythm feedback at `/practice-coach`. The analysis runs in the separate [practice_helper](https://github.com/junseo85/practice_helper) Python service; `PracticeCoachController` proxies to it (behind login + CSRF). Run that service (`docker compose up` starts it if `practice_helper` is cloned next to this repo) and set `PRACTICE_HELPER_URL` (default `http://localhost:5000`). If it is down, the page shows a friendly "unavailable" message.
 
 ### Integrations
 - **Payments:** Stripe API (Test Mode Integration)
