@@ -26,6 +26,7 @@
 
   <h1 th:text="${pageTitle}" class="mb-4">Welcome</h1>
 
+  <!-- Administrators and teachers review semester and single-lesson requests and manage calendar overrides here. -->
   <div th:if="${isAdmin or isTeacher}">
     <h3 class="mb-4">My Studio: Semester Requests</h3>
 
@@ -245,6 +246,7 @@
 
 
 
+  <!-- Non-admin users, including teachers, can purchase credits and review their scheduled lessons. -->
   <div th:if="${!isAdmin}">
 
     <div class="card shadow-sm mb-5">
@@ -303,6 +305,7 @@
 
   </div>
 
+  <!-- The payment query flag opens this receipt choice once; the script below then removes it from the URL. -->
   <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">

@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+/** Configures email-based form authentication and the route-level access rules for the application. */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {

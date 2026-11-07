@@ -1,3 +1,4 @@
+-- Persist upload lifecycle state separately from per-part ETags and the finalized media record.
 CREATE TABLE IF NOT EXISTS upload_session (
                                               id UUID PRIMARY KEY,
                                               user_id VARCHAR(128) NOT NULL,

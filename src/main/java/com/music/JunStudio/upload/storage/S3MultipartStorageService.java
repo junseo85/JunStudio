@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignReque
 import java.time.Duration;
 import java.util.List;
 
+/** Implements multipart storage operations with S3 and issues time-limited URLs for direct part uploads. */
 @Service
 @RequiredArgsConstructor
 public class S3MultipartStorageService implements StorageMultipartService {

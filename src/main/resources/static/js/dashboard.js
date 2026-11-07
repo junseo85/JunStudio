@@ -3,6 +3,7 @@
 let qty = 1;
 const pricePerCredit = 75;
 
+// Keep the submitted checkout quantity and its on-screen price in sync.
 function changeQty(change) {
     // Change the quantity, but prevent it from going below 1
     qty += change;

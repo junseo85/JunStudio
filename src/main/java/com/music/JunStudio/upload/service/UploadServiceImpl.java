@@ -18,6 +18,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+/**
+ * Coordinates the persisted upload-session lifecycle with the multipart storage provider.
+ * The database tracks ownership, expiry, and client-reported parts; storage performs the
+ * actual byte transfer and assembles the final object.
+ */
 @Service
 @RequiredArgsConstructor
 public class UploadServiceImpl implements UploadService {
@@ -155,6 +161,7 @@ public class UploadServiceImpl implements UploadService {
         UploadSessionEntity s = mustGet(sessionId);
         validateActiveSession(s);
 
+        // Storage requires every part number and ETag in order; reject gaps before completing it.
         List<UploadPartEntity> saved = uploadPartRepository.findByUploadSessionIdOrderByPartNumberAsc(sessionId);
 
         if (saved.size() != s.getTotalParts()) {
@@ -187,6 +194,7 @@ public class UploadServiceImpl implements UploadService {
 
         storage.completeMultipart(s.getObjectKey(), s.getProviderUploadId(), completeParts);
 
+        // Expose a media record only after storage has assembled the multipart object.
         s.setStatus("COMPLETED");
         s.setUpdatedAt(Instant.now());
         uploadSessionRepository.save(s);

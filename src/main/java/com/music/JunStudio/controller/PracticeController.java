@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+/** Manages practice-video galleries, privacy-aware viewing, feedback, and owner/admin edits. */
 @Controller
 @RequestMapping("/practice")
 public class PracticeController {

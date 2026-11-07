@@ -14,7 +14,7 @@ import java.time.LocalTime;
                 name = "uk_student_lesson_datetime",
                 columnNames = {"student_email", "lesson_date", "lesson_time"}
         )
-})//defense against race condition- if two requests hit your server in the exact same millisecond, both could theoretically read the database, see that the slot is open, and insert a row simultaneouslyl.
+}) // Database uniqueness is the final guard against concurrent duplicate bookings for a student and slot.
 @Data
 @NoArgsConstructor
 public class Lesson {

@@ -65,6 +65,9 @@ public class CheckoutController {
     }
 
     // Catch the 'qty' we passed in the success URL above
+    /**
+     * Applies the quantity carried by the checkout return URL to the signed-in user's balance.
+     */
     @GetMapping("/checkout/success")
     public String checkoutSuccess(@RequestParam(defaultValue = "1") Integer qty, Principal principal) {
 

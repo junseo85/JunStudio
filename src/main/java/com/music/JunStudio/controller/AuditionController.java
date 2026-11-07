@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+/** Provides role-filtered audition galleries and controls for viewing and maintaining videos. */
 @Controller
 @RequestMapping("/audition")
 public class AuditionController {

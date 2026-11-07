@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
+/** Adapts the stored email, password hash, and role to Spring Security's login contract. */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 

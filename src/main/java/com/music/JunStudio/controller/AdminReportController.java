@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 
+/** Aggregates lesson and practice-video activity into the admin chart and history view. */
 @Controller
 @RequestMapping("/admin/reports")
 public class AdminReportController {

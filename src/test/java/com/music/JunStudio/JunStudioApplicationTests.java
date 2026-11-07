@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-@ActiveProfiles("test") // THIS IS THE MAGIC LINE
+@ActiveProfiles("test") // Run the context checks against the isolated test profile.
 class JunStudioApplicationTests {
 
 	@Autowired

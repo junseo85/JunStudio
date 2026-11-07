@@ -17,6 +17,7 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
+/** Collects semester preferences and reserves the 16 credits for each submitted request atomically. */
 @Controller
 @RequestMapping("/semester/register")
 public class SemesterRegistrationController {
