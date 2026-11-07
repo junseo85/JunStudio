@@ -2,3 +2,11 @@
 target/
 .idea/
 *.iml
+.env
+.env.*
+**/.env
+**/.env.*
+*.env
+*.env.*
+**/*.env
+**/*.env.*
