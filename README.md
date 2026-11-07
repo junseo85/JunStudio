@@ -9,7 +9,8 @@ This project represents my transition from 20+ years of professional performance
 ## 🚀 Live Production Environment
 
 - **Domain:** `celloJun.com`
-- **Architecture:** AWS EC2 (Docker Compose) + RDS (MySQL) + Cloudflare  
+- **Architecture:** AWS EC2 (Docker Compose) + containerized MySQL + Cloudflare
+  *(an alternative RDS configuration is available)*
   *(legacy branch/history includes AWS EKS/Fargate architecture)*
 
 ---
@@ -19,17 +20,16 @@ This project represents my transition from 20+ years of professional performance
 ### Backend
 - Java 17
 - Spring Boot
-- Spring Security (JWT)
+- Spring Security (session authentication and role-based access)
 - Hibernate / JPA
 
 ### Frontend
-- React.js
-- Tailwind CSS
-- Framer Motion
+- Thymeleaf templates
+- JavaScript and CSS
 - Vanilla JS upload module (chunked/resumable uploader)
 
 ### Database
-- Amazon RDS (MySQL)
+- MySQL (Compose container or external RDS)
 
 ### Cloud & DevOps
 - AWS EC2
@@ -38,7 +38,9 @@ This project represents my transition from 20+ years of professional performance
 - Cloudflare DNS + SSL/TLS
 
 ### Practice Coach (instant practice feedback)
-Logged-in students can scan sheet music, record or upload their playing, and get note-by-note pitch/rhythm feedback at `/practice-coach`. The analysis runs in the separate [practice_helper](https://github.com/junseo85/practice_helper) Python service; `PracticeCoachController` proxies to it (behind login + CSRF). Run that service (`docker compose up` starts it if `practice_helper` is cloned next to this repo) and set `PRACTICE_HELPER_URL` (default `http://localhost:5000`). If it is down, the page shows a friendly "unavailable" message.
+Logged-in students can load sheet music, record or upload their playing, and get note-by-note pitch/rhythm feedback at `/practice-coach`. The Spring Boot controller proxies requests to the separate, private [practice_helper](https://github.com/junseo85/practice_helper) Python service with login and CSRF protection. Compose connects the services using `PRACTICE_HELPER_URL`; outside Compose the default is `http://localhost:5000`. If the service is down, the page reports that it is unavailable.
+
+The default helper image supports audio analysis and saved score JSON. Image/PDF scanning requires the optional OMR build below. The first scan downloads additional software and model checkpoints and can take several minutes; resource-constrained instances may struggle. OMR is intended for single-staff, single-melody music, and its results should be checked for accuracy.
 
 ### Integrations
 - **Payments:** Stripe API (Test Mode Integration)
@@ -92,7 +94,7 @@ To prevent this, JunStudio uses **direct-to-storage multipart uploads**.
 The platform is built for production security, resilience, and cost-efficiency:
 
 - **Application Runtime:** Containerized Spring Boot + frontend deployment on EC2
-- **Data Persistence:** Managed Amazon RDS in private VPC boundaries
+- **Data Persistence:** MySQL in a persistent Compose volume; an external RDS configuration is also available
 - **Edge Security:** Cloudflare proxy + SSL/TLS for secure public access
 - **Credential Safety:** Runtime secret/config injection (no hardcoded credentials)
 - **Object Storage Offload:** Large file payloads bypass app-server memory path
@@ -113,7 +115,7 @@ JunStudio includes an automated notification system to keep teachers and student
 
 ### 1) Infrastructure Migration (EKS → EC2)
 - **Problem:** EKS/Fargate overhead was too expensive for solo project economics.
-- **Solution:** Migrated to EC2 + Docker Compose, reducing monthly infrastructure cost by **~95%** while preserving production-grade service delivery.
+- **Solution:** Migrated to EC2 + Docker Compose, reducing monthly hosting cost from approximately $150 to $25 (about 83%).
 
 ### 2) JVM Stability on Resource-Constrained Host
 - **Problem:** Container memory contention on small instance sizes.
@@ -143,7 +145,7 @@ accounts must be provisioned securely; no default admin is created.
 ## 📂 Representative Upload Module Structure
 
 ```text
-src/main/java/com/junstudio/upload/
+src/main/java/com/music/JunStudio/upload/
   api/UploadController.java
   dto/UploadDtos.java
   service/UploadService.java
@@ -154,11 +156,12 @@ src/main/java/com/junstudio/upload/
   security/UploadAuthHelper.java
 
 src/main/resources/db/migration/
-  V1__large_upload_tables.sql
+  V1_large_upload_tables.sql
 
 src/main/resources/static/
-  upload.html
   js/uploader.js
+src/main/resources/templates/
+  upload.html
 ```
 
 ---
@@ -168,20 +171,66 @@ src/main/resources/static/
 ### Prerequisites
 - Docker & Docker Compose
 - Java 17
-- MySQL / RDS access
+- Access to the private `practice_helper` repository
 - S3-compatible bucket credentials
 - Stripe + SMTP secrets
 
-### Local MySQL deployment
-Set `MYSQL_ROOT_PASSWORD`, `MAIL_USER`, and `MAIL_PASS` in a protected,
-untracked `.env` file or in the deployment environment before starting Compose.
-The Compose file runs its own MySQL container; it is not an RDS configuration.
+### MySQL container deployment
+Clone `practice_helper` on its `listen_js` branch alongside JunStudio (GitHub
+authentication is required), and set `MYSQL_ROOT_PASSWORD`, `MAIL_USER`,
+`MAIL_PASS`, and optionally `STRIPE_API_KEY` in a protected, untracked `.env`
+file in the JunStudio directory. Docker Compose passes only variables declared
+in the Compose file to the app; `STRIPE_KEY` in `.env` is not passed through
+by the default configuration.
 
 ```bash
 git clone -b EC2 https://github.com/junseo85/JunStudio.git
+git clone -b listen_js git@github.com:junseo85/practice_helper.git
 cd JunStudio
-docker-compose up -d --build
+chmod 600 .env
+docker compose up -d --build
 ```
+
+For an existing deployment, back up the database first and use its current
+MySQL root password. Changing `MYSQL_ROOT_PASSWORD` in `.env` does not change
+the password in an existing volume. Check the existing Compose project and
+volume names before deploying; never use `down -v` unless you intend to delete
+the database volume.
+
+The default app port is `8080`. To preserve a server's port 80 mapping and
+enable optional sheet scanning, create a **server-local**, untracked override
+file, for example `compose.ec2-local.yml`:
+
+```yaml
+services:
+  app:
+    ports: !override
+      - "80:8080"
+  practice-helper:
+    build:
+      context: ../practice_helper
+      args:
+        INSTALL_OMR: "true"
+```
+
+Use a Compose version supporting `!override` and Buildx 0.17 or newer. Depending
+on the server, the command may be `docker-compose` rather than `docker compose`.
+Do not commit the local override or credentials. Validate and build before
+restarting the app and helper without recreating MySQL:
+
+```bash
+docker compose -f docker-compose.yml -f compose.ec2-local.yml config --quiet
+docker compose -f docker-compose.yml -f compose.ec2-local.yml build
+docker compose -f docker-compose.yml -f compose.ec2-local.yml up -d --no-build --no-deps practice-helper app
+docker compose -f docker-compose.yml -f compose.ec2-local.yml ps
+curl -s -o /dev/null -w "HTTP status: %{http_code}\n" http://localhost/
+```
+
+The current MySQL container may have different port bindings from the default
+Compose file until it is recreated. Restrict database access in the EC2 security
+group and inspect the actual container bindings; avoid exposing port 3306
+publicly. Rebuilding the helper may be needed after updating its source. Its
+non-root container user needs read access to copied application files.
 
 ### EC2 deployment with RDS
 Use `docker-compose.rds.yml` instead of the default Compose file. Place
@@ -191,7 +240,8 @@ defaults to `com.mysql.cj.jdbc.Driver`; `DB_DRIVER_CLASS_NAME` or the legacy
 `DB_DRIVERCLASS_NAME` can override it. The `.env` file is passed to the app
 container, including any other settings needed by the deployment.
 
-Clone `practice_helper` alongside this repository before building, and ensure
+Clone the `listen_js` branch of `practice_helper` alongside this repository
+before building, and ensure
 the EC2 instance can reach RDS. Back up the database before deploying: the app
 uses Hibernate schema updates. From the JunStudio directory, run:
 
@@ -200,8 +250,10 @@ docker compose -f docker-compose.rds.yml up -d --build
 docker compose -f docker-compose.rds.yml logs --tail=100 app
 ```
 
-The RDS configuration does not start or delete a local MySQL container or volume.
-Do not use `--remove-orphans` without first checking what it would remove.
+The RDS configuration does not start or delete a local MySQL container or volume
+and does not migrate its data. Switching databases requires a separate migration
+and verification. Do not use `--remove-orphans` without first checking what it
+would remove.
 
 ---
 
