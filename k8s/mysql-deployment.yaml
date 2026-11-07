@@ -25,7 +25,10 @@ spec:
             - name: MYSQL_DATABASE
               value: "junstudio_db"
             - name: MYSQL_ROOT_PASSWORD
-              value: "root" # In the future, we'll move this to K8s Secrets!
+              valueFrom:
+                secretKeyRef:
+                  name: junstudio-mysql-secrets
+                  key: MYSQL_ROOT_PASSWORD
           ports:
             - containerPort: 3306
 ---

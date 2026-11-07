@@ -137,15 +137,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-//    @Bean
-//    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-//        UserDetails admin = User.builder()
-//                .username("testjun@email.com")
-//                .password(encoder.encode("password123")) // This automatically hashes it for you!
-//                .roles("ADMIN") // Spring automatically adds the "ROLE_" prefix here
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(admin);
-//    }
 }

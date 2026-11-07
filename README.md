@@ -85,16 +85,8 @@ Implemented Kubernetes Rolling Updates and `kubectl rollout` management so that 
 
 ## 🔑 Access & Testing
 
-To review the platform’s functionality, use the credentials below.
-
-### User Roles
-
-**Test Teacher Account**
-- **Email:** `test@junstudio.com`
-- **Password:** `test123`
-
-**Student Account**
-- Create a new account via the Sign-Up page.
+Student accounts can be created through the Sign-Up page. Teacher and admin
+accounts must be provisioned securely; no default admin is created.
 
 ---
 
@@ -165,6 +157,10 @@ While the `master` branch utilizes a high-availability **AWS EKS (Kubernetes)** 
 * Java 17 (for local dev)
 
 ### **Deployment Command**
+Set `MYSQL_ROOT_PASSWORD`, `MAIL_USER`, and `MAIL_PASS` in a protected,
+untracked `.env` file or in the deployment environment before starting Compose.
+The Compose file runs its own MySQL container; it is not an RDS configuration.
+
 ```bash
 # Clone the optimized branch
 git clone -b EC2 https://github.com/junseo85/JunStudio.git
@@ -174,3 +170,27 @@ cd JunStudio
 docker-compose up -d --build
 ```
 
+### Credential remediation for existing deployments
+
+- Restrict public access until the known default admin and documented test
+  teacher accounts have been disabled or securely reset in the live database.
+  Removing the seeder does not change existing database records.
+- Rotate any exposed database, Stripe, mail, AWS, and other credentials at
+  their providers. Update the deployed secrets and inspect account access logs.
+- For Kubernetes, provision `junstudio-mysql-secrets` with a
+  `MYSQL_ROOT_PASSWORD` key through your secret-management process before
+  deploying `k8s/mysql-deployment.yaml`. Keep the app's database credentials
+  in `junstudio-secrets` consistent with the database.
+- MySQL initialization variables apply to a new data directory only. For an
+  existing volume, change the database password using MySQL's account management
+  procedure, then update both application and database deployment secrets.
+  Back up the database before making changes.
+- Environment variables and local `.env` files are accessible to sufficiently
+  privileged host users. Restrict host and file permissions and prefer a managed
+  secrets solution for production. The Compose MySQL port is bound to localhost;
+  the Compose configuration is not a hardened production database setup.
+- Review the full Git history and secret-scanning alerts after rotation. Removing
+  a value from the current tree does not remove it from history, forks or clones.
+  Coordinate any history rewrite with repository collaborators.
+- Verify the live deployment, login, database connectivity, mail and payments
+  after rotating secrets and redeploying.
