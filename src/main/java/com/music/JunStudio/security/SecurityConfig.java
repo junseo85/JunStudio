@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**",
                                 "/password-reset/request", "/password-reset/confirm").permitAll()
 
+                        .requestMatchers("/admin/users", "/admin/users/**").hasRole("ADMIN")
+
                         // NEW: Allow BOTH Admins and Teachers to manage schedule actions
                         .requestMatchers(
                                 "/lesson/approve",

@@ -174,7 +174,8 @@ docker-compose up -d --build
 
 - Restrict public access until the known default admin and documented test
   teacher accounts have been disabled or securely reset in the live database.
-  Removing the seeder does not change existing database records.
+  Reset all accounts created with the former shared default password as well.
+  Removing the seeder and shared default does not change existing records.
 - Rotate any exposed database, Stripe, mail, AWS, and other credentials at
   their providers. Update the deployed secrets and inspect account access logs.
 - For Kubernetes, provision `junstudio-mysql-secrets` with a

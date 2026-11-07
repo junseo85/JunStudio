@@ -105,7 +105,14 @@
                                 <input type="number" name="lessonCredits" class="form-control" value="0" min="0">
                             </div>
                         </div>
-                        <small class="text-muted">Default password will be set to: password123</small>
+                        <div class="mb-3">
+                            <label for="createPassword">Password</label>
+                            <input type="password" id="createPassword" name="newPassword" class="form-control" minlength="12" autocomplete="new-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="createConfirmPassword">Confirm Password</label>
+                            <input type="password" id="createConfirmPassword" name="confirmPassword" class="form-control" minlength="12" autocomplete="new-password" required>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary w-100">Create User</button>
