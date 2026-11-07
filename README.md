@@ -172,16 +172,36 @@ src/main/resources/static/
 - S3-compatible bucket credentials
 - Stripe + SMTP secrets
 
-### Deployment
+### Local MySQL deployment
 Set `MYSQL_ROOT_PASSWORD`, `MAIL_USER`, and `MAIL_PASS` in a protected,
 untracked `.env` file or in the deployment environment before starting Compose.
 The Compose file runs its own MySQL container; it is not an RDS configuration.
 
 ```bash
-git clone https://github.com/junseo85/JunStudio.git
+git clone -b EC2 https://github.com/junseo85/JunStudio.git
 cd JunStudio
 docker-compose up -d --build
 ```
+
+### EC2 deployment with RDS
+Use `docker-compose.rds.yml` instead of the default Compose file. Place
+`DB_URL` (a MySQL JDBC URL), `DB_USER`, `DB_PASS`, `MAIL_USER`, `MAIL_PASS`,
+and `STRIPE_API_KEY` in the protected, untracked `.env` file. The driver
+defaults to `com.mysql.cj.jdbc.Driver`; `DB_DRIVER_CLASS_NAME` or the legacy
+`DB_DRIVERCLASS_NAME` can override it. The `.env` file is passed to the app
+container, including any other settings needed by the deployment.
+
+Clone `practice_helper` alongside this repository before building, and ensure
+the EC2 instance can reach RDS. Back up the database before deploying: the app
+uses Hibernate schema updates. From the JunStudio directory, run:
+
+```bash
+docker compose -f docker-compose.rds.yml up -d --build
+docker compose -f docker-compose.rds.yml logs --tail=100 app
+```
+
+The RDS configuration does not start or delete a local MySQL container or volume.
+Do not use `--remove-orphans` without first checking what it would remove.
 
 ---
 

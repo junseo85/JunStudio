@@ -1,0 +1,20 @@
+services:
+  practice-helper:
+    build: ../practice_helper
+    container_name: practice-helper
+
+  app:
+    build: .
+    container_name: junstudio-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - practice-helper
+    env_file:
+      - .env
+    environment:
+      DB_URL: ${DB_URL:?Set DB_URL to the RDS JDBC URL}
+      DB_USER: ${DB_USER:?Set DB_USER}
+      DB_PASS: ${DB_PASS:?Set DB_PASS}
+      DB_DRIVER_CLASS_NAME: ${DB_DRIVER_CLASS_NAME:-${DB_DRIVERCLASS_NAME:-com.mysql.cj.jdbc.Driver}}
+      PRACTICE_HELPER_URL: http://practice-helper:5000
