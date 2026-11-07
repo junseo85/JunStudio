@@ -28,4 +28,4 @@ The Resolution: I updated the IAM OIDC provider, created a "V3" security policy 
 4. Security & Best Practices
    Stripe Integration: Implemented Webhooks to ensure that the application only grants lesson access after Stripe confirms a successful payment event.
 
-Environment Safety: Leveraged .env files and Kubernetes Secrets to ensure no API keys or database passwords were ever committed to GitHub.
+Environment Safety: Uses environment variables and Kubernetes Secrets for configuration. Review Git history for previously exposed credentials and rotate them.

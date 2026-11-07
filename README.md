@@ -37,6 +37,9 @@ This project represents my transition from 20+ years of professional performance
 - Linux (Amazon Linux 2023)
 - Cloudflare DNS + SSL/TLS
 
+### Practice Coach (instant practice feedback)
+Logged-in students can scan sheet music, record or upload their playing, and get note-by-note pitch/rhythm feedback at `/practice-coach`. The analysis runs in the separate [practice_helper](https://github.com/junseo85/practice_helper) Python service; `PracticeCoachController` proxies to it (behind login + CSRF). Run that service (`docker compose up` starts it if `practice_helper` is cloned next to this repo) and set `PRACTICE_HELPER_URL` (default `http://localhost:5000`). If it is down, the page shows a friendly "unavailable" message.
+
 ### Integrations
 - **Payments:** Stripe API (Test Mode Integration)
 - **Email:** Java Mail Sender (SMTP) for booking confirmations and user notifications
@@ -124,16 +127,8 @@ JunStudio includes an automated notification system to keep teachers and student
 
 ## 🔑 Access & Testing
 
-To review the platform functionality, use:
-
-### User Roles
-
-**Test Teacher Account**
-- **Email:** `test@junstudio.com`
-- **Password:** `test123`
-
-**Student Account**
-- Register via Sign-Up page.
+Student accounts can be created through the Sign-Up page. Teacher and admin
+accounts must be provisioned securely; no default admin is created.
 
 ---
 
@@ -177,7 +172,11 @@ src/main/resources/static/
 - S3-compatible bucket credentials
 - Stripe + SMTP secrets
 
-### Example run
+### Deployment
+Set `MYSQL_ROOT_PASSWORD`, `MAIL_USER`, and `MAIL_PASS` in a protected,
+untracked `.env` file or in the deployment environment before starting Compose.
+The Compose file runs its own MySQL container; it is not an RDS configuration.
+
 ```bash
 git clone https://github.com/junseo85/JunStudio.git
 cd JunStudio
@@ -191,3 +190,25 @@ docker-compose up -d --build
 - Legacy architecture/history references to EKS remain for portfolio context.
 - Active deployment strategy is cost-optimized EC2 container orchestration.
 - Upload subsystem is designed for future ML/transcoding queue integration.
+
+### Credential remediation for existing deployments
+
+- Restrict public access until the known default admin and documented test
+  teacher accounts have been disabled or securely reset in the live database.
+  Reset all accounts created with the former shared default password as well.
+  Removing the seeder and shared default does not change existing records.
+- Rotate any exposed database, Stripe, mail, AWS, and other credentials at
+  their providers. Update the deployed secrets and inspect account access logs.
+- MySQL initialization variables apply to a new data directory only. For an
+  existing volume, change the database password using MySQL's account management
+  procedure, then update both application and database deployment secrets.
+  Back up the database before making changes.
+- Environment variables and local `.env` files are accessible to sufficiently
+  privileged host users. Restrict host and file permissions and prefer a managed
+  secrets solution for production. The Compose MySQL port is bound to localhost;
+  the Compose configuration is not a hardened production database setup.
+- Review the full Git history and secret-scanning alerts after rotation. Removing
+  a value from the current tree does not remove it from history, forks or clones.
+  Coordinate any history rewrite with repository collaborators.
+- Verify the live deployment, login, database connectivity, mail and payments
+  after rotating secrets and redeploying.

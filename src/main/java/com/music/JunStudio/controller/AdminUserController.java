@@ -39,8 +39,16 @@ public class AdminUserController {
 
     // 2. Create a new user manually
     @PostMapping("/create")
-    public String createUser(@ModelAttribute User user) {
-        user.setPasswordHash(passwordEncoder.encode("password123"));
+    public String createUser(@ModelAttribute User user,
+                             @RequestParam(required = false) String newPassword,
+                             @RequestParam(required = false) String confirmPassword) {
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 12) {
+            return "redirect:/admin/users?error=Password must be at least 12 characters";
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            return "redirect:/admin/users?error=Passwords do not match";
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         return "redirect:/admin/users?success=User created successfully";
     }

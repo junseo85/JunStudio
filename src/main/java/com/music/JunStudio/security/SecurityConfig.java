@@ -37,8 +37,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/about", "/register", "/css/**", "/js/**", "/images/**",
                                 "/password-reset/request", "/password-reset/confirm").permitAll()
-                        .requestMatchers("/admin/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/event/delete/**").permitAll()
+
+                        .requestMatchers("/admin/users", "/admin/users/**").hasRole("ADMIN")
 
                         // NEW: Allow BOTH Admins and Teachers to manage schedule actions
                         .requestMatchers(
@@ -142,15 +143,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-//    @Bean
-//    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-//        UserDetails admin = User.builder()
-//                .username("testjun@email.com")
-//                .password(encoder.encode("password123")) // This automatically hashes it for you!
-//                .roles("ADMIN") // Spring automatically adds the "ROLE_" prefix here
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(admin);
-//    }
 }
