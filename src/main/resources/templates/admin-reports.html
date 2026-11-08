@@ -103,6 +103,7 @@
     <script th:inline="javascript">
         document.addEventListener("DOMContentLoaded", function() {
 
+            // Thymeleaf serializes the server-side counts and per-user aggregates into chart inputs.
             // 1. Pull the high-level numbers
             const overviewData = [
                 /*[[${scheduledCount}]]*/ 0,

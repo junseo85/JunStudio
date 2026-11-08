@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/** JSON endpoints for basic user registration and profile lookup. */
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*") // Allows your React app to talk to this API

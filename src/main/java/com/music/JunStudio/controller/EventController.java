@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 
+/** Serves the event schedule view and the small event-management API used by its forms. */
 @Controller//return THymeleaf template
 @RequestMapping("/api/event")
 public class EventController {

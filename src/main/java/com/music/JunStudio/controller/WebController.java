@@ -275,6 +275,10 @@ public class WebController {
         return "schedule";
     }
 
+    /**
+     * Validates a requested slot against closures, teacher-specific hours, and existing bookings;
+     * only a valid request creates a pending lesson and consumes one credit.
+     */
     @PostMapping("/schedule")
     public String requestLesson(@RequestParam Long teacherId,
             @RequestParam LocalDate lessonDate,
@@ -462,6 +466,10 @@ public class WebController {
         );
     }
 
+    /**
+     * Builds hourly choices from the applicable global or teacher override, excluding past
+     * times today and slots already occupied by any non-canceled lesson.
+     */
     @GetMapping("/api/available-times")
     @ResponseBody
     public List<String> getAvailableTimes(@RequestParam LocalDate date,@RequestParam Long teacherId, Principal principal) {
@@ -623,6 +631,10 @@ public class WebController {
     }
 
     //Teacher Assigns a Time Slot
+    /**
+     * Expands an accepted weekly assignment into 16 scheduled lessons, skipping dates blocked
+     * by studio closures or the assigned teacher's hours.
+     */
     @PostMapping("/semester/assign")
     public String assignSemesterSlot( @RequestParam Long registrationId, @RequestParam DayOfWeek assignedDay, @RequestParam LocalTime assignedTime){
         SemesterRegistration registration = registrationRepository.findById(registrationId).orElseThrow(() -> new RuntimeException("Registration not found"));

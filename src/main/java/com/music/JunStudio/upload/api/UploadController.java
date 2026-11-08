@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/** Exposes the session lifecycle while clients send each file part directly to object storage. */
 @RestController
 @RequestMapping("/api/uploads/sessions")
 @RequiredArgsConstructor

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/** Records student audio submissions by URL and exposes the review queue and feedback endpoints. */
 @RestController
 @RequestMapping("/api/practice")
 @CrossOrigin(origins = "*")

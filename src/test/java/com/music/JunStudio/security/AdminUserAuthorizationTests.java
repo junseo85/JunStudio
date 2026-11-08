@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** Exercises the actual Spring Security filter chain with role-specific mock sessions. */
 @SpringBootTest
 @ActiveProfiles("test")
 class AdminUserAuthorizationTests {
@@ -35,6 +36,7 @@ class AdminUserAuthorizationTests {
     }
 
     private MockHttpSession sessionFor(String role) {
+        // MockMvc does not perform login here; seed the session with the authentication under test.
         var securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(new UsernamePasswordAuthenticationToken(
                 "user@example.invalid", null, List.of(new SimpleGrantedAuthority(role))));

@@ -42,7 +42,7 @@ public class PasswordResetController {
     @PostMapping("/request")
     public String processRequest(@RequestParam String email, Model model, HttpServletRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(email);
-        // Always show the same message to avoid revealing whether an account exists
+        // Keep the response identical for known and unknown addresses to avoid account enumeration.
         model.addAttribute("message", "If an account with that email exists, a password reset link has been sent. Please check your inbox and spam folder.");
 
         if (userOpt.isPresent()) {

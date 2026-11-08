@@ -5,6 +5,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+/** Sends the plain-text transactional messages used by scheduling and account workflows. */
 @Service
 public class EmailService {
 

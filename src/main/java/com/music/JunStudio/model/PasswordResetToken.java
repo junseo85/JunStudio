@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/** Single-use, expiring credential that links a password-reset request to its account. */
 @Entity
 @Table(name = "password_reset_tokens")
 @Data

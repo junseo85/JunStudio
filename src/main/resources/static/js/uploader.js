@@ -16,6 +16,7 @@ async function retry(fn, maxRetries = 5) {
             return await fn();
         } catch (err) {
             if (attempt >= maxRetries) throw err;
+            // Exponential backoff with a cap avoids retrying transient failures in a tight loop.
             const delay = Math.min(1000 * (2 ** attempt), 10000);
             await sleep(delay);
             attempt++;
@@ -23,6 +24,10 @@ async function retry(fn, maxRetries = 5) {
     }
 }
 
+/**
+ * Creates a session, resumes any recorded parts, uploads the remainder in bounded batches,
+ * registers their ETags, then asks the server to assemble the completed object.
+ */
 export async function uploadLargeFile(file, options = {}) {
     const cfg = { ...DEFAULTS, ...options };
     const totalParts = Math.ceil(file.size / cfg.chunkSize);

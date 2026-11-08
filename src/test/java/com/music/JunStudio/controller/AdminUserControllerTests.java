@@ -10,6 +10,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+/** Unit tests for password validation and persistence in the controller, without the web/security stack. */
 class AdminUserControllerTests {
     private final UserRepository repository = mock(UserRepository.class);
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();

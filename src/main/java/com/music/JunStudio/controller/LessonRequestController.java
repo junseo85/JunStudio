@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/** API for legacy single-lesson requests, which reserve one credit when submitted. */
 @RestController
 @RequestMapping("/api/lessons")
 @CrossOrigin(origins = "*")

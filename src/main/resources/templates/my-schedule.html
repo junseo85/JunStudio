@@ -8,6 +8,7 @@
 <main class="container mt-5">
     <h2 class="mb-4">Lesson Schedule</h2>
 
+    <!-- Staff receive separate status tabs and actions; students see their own lesson history below. -->
     <div th:if="${isAdmin or isTeacher}">
 
         <ul class="nav nav-tabs" id="scheduleTabs" role="tablist">
