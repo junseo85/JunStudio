@@ -36,7 +36,8 @@ public class CheckoutController {
     @PostMapping("/checkout")
     public String createCheckoutSession(@RequestParam(defaultValue = "1") Long quantity) throws Exception {
 
-        String YOUR_DOMAIN = "http://localhost:8080";
+        //String YOUR_DOMAIN = "http://localhost:8080";
+        String YOUR_DOMAIN = "https://cellojun.com";
 
         SessionCreateParams params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
